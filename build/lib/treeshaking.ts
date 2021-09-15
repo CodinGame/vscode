@@ -134,6 +134,17 @@ function createTypeScriptLanguageService(ts: typeof import('typescript'), option
 	return ts.createLanguageService(host);
 }
 
+function getAllImportedFiles(ts: typeof import('typescript'), rootFilePath: string): string[] {
+	const dts_filecontents = fs.readFileSync(rootFilePath).toString();
+	const info = ts.preProcessFile(dts_filecontents);
+	const importedFiles = info.importedFiles.map(importedFilePath => path.resolve(path.dirname(rootFilePath), `${importedFilePath.fileName}.d.ts`));
+
+	return Array.from(new Set(importedFiles.reduce((acc, path) => [
+		...acc,
+		...getAllImportedFiles(ts, path)
+	], [rootFilePath, ...importedFiles])));
+}
+
 /**
  * Read imports and follow them until all files have been handled
  */
@@ -155,6 +166,23 @@ function discoverAndReadFiles(ts: typeof import('typescript'), options: ITreeSha
 
 	while (queue.length > 0) {
 		const moduleId = queue.shift()!;
+
+		const lib_directory = path.resolve(options.sourcesRoot, '../node_modules', moduleId);
+		if (fs.existsSync(lib_directory)) {
+			const typingsFile = path.resolve(lib_directory, JSON.parse(fs.readFileSync(path.join(lib_directory, 'package.json')).toString()).typings);
+			const dts_filecontents = getAllImportedFiles(ts, typingsFile)
+				.map(typingsFile => fs.readFileSync(typingsFile).toString())
+				.join('\n')
+				.replace(/import .*\n/g, '')
+				.replace(/export .* from .*\n/g, '');
+			FILES[`${moduleId}.d.ts`] = dts_filecontents;
+			continue;
+		}
+		if (moduleId === 'vscode') {
+			FILES[`${moduleId}.d.ts`] = fs.readFileSync(path.join(options.sourcesRoot, 'vscode-dts/vscode.d.ts')).toString();
+			continue;
+		}
+
 		const dts_filename = path.join(options.sourcesRoot, moduleId + '.d.ts');
 		if (fs.existsSync(dts_filename)) {
 			const dts_filecontents = fs.readFileSync(dts_filename).toString();
