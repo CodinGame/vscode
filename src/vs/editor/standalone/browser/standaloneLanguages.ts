@@ -12,7 +12,7 @@ import { Token, TokenizationResult, TokenizationResult2 } from 'vs/editor/common
 import * as model from 'vs/editor/common/model';
 import * as modes from 'vs/editor/common/modes';
 import { LanguageConfiguration } from 'vs/editor/common/modes/languageConfiguration';
-import { LanguageConfigurationRegistry } from 'vs/editor/common/modes/languageConfigurationRegistry';
+import { LanguageConfigurationRegistry, LanguageConfigurationRegistryImpl, LanguageConfigurationChangeEvent } from 'vs/editor/common/modes/languageConfigurationRegistry';
 import { ModesRegistry } from 'vs/editor/common/modes/modesRegistry';
 import { ILanguageExtensionPoint, IModeService } from 'vs/editor/common/services/modeService';
 import * as standaloneEnums from 'vs/editor/common/standalone/standaloneEnums';
@@ -656,6 +656,8 @@ export function createMonacoLanguagesAPI(): typeof monaco.languages {
 		registerDocumentRangeSemanticTokensProvider: <any>registerDocumentRangeSemanticTokensProvider,
 		registerInlineCompletionsProvider: <any>registerInlineCompletionsProvider,
 		registerInlayHintsProvider: <any>registerInlayHintsProvider,
+		LanguageConfigurationRegistryImpl: <any>LanguageConfigurationRegistryImpl,
+		LanguageConfigurationChangeEvent: <any>LanguageConfigurationChangeEvent,
 
 		// enums
 		DocumentHighlightKind: standaloneEnums.DocumentHighlightKind,
@@ -669,8 +671,10 @@ export function createMonacoLanguagesAPI(): typeof monaco.languages {
 		SignatureHelpTriggerKind: standaloneEnums.SignatureHelpTriggerKind,
 		InlayHintKind: standaloneEnums.InlayHintKind,
 		InlineCompletionTriggerKind: standaloneEnums.InlineCompletionTriggerKind,
+		LanguageId: standaloneEnums.LanguageId,
+		StandardTokenType: standaloneEnums.StandardTokenType,
 
 		// classes
-		FoldingRangeKind: modes.FoldingRangeKind,
+		FoldingRangeKind: modes.FoldingRangeKind
 	};
 }

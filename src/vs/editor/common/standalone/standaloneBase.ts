@@ -10,8 +10,12 @@ import { URI } from 'vs/base/common/uri';
 import { Position } from 'vs/editor/common/core/position';
 import { Range } from 'vs/editor/common/core/range';
 import { Selection } from 'vs/editor/common/core/selection';
-import { Token } from 'vs/editor/common/core/token';
+import { Token, TokenizationResult, TokenizationResult2 } from 'vs/editor/common/core/token';
 import * as standaloneEnums from 'vs/editor/common/standalone/standaloneEnums';
+import { MarkdownString } from 'vs/base/common/htmlContent';
+import { Disposable, DisposableStore } from 'vs/base/common/lifecycle';
+import { ErrorHandler, errorHandler } from 'vs/base/common/errors';
+import { AbstractLogger, ConsoleLogger } from 'vs/platform/log/common/log';
 
 export class KeyMod {
 	public static readonly CtrlCmd: number = ConstKeyMod.CtrlCmd;
@@ -28,6 +32,7 @@ export function createMonacoBaseAPI(): typeof monaco {
 	return {
 		editor: undefined!, // undefined override expected here
 		languages: undefined!, // undefined override expected here
+		extra: undefined!, // undefined override expected here
 		CancellationTokenSource: CancellationTokenSource,
 		Emitter: Emitter,
 		KeyCode: standaloneEnums.KeyCode,
@@ -35,10 +40,27 @@ export function createMonacoBaseAPI(): typeof monaco {
 		Position: Position,
 		Range: Range,
 		Selection: <any>Selection,
+		Uri: <any>URI,
+		Token: Token,
+
+		// classes
+		MarkdownString: <any>MarkdownString,
+		Disposable: <any>Disposable,
+		DisposableStore: <any>DisposableStore,
+		ErrorHandler: ErrorHandler,
+		AbstractLogger: <any>AbstractLogger,
+		ConsoleLogger: <any>ConsoleLogger,
+		TokenizationResult: <any>TokenizationResult,
+		TokenizationResult2: <any>TokenizationResult2,
+
+		// enums
 		SelectionDirection: standaloneEnums.SelectionDirection,
 		MarkerSeverity: standaloneEnums.MarkerSeverity,
 		MarkerTag: standaloneEnums.MarkerTag,
-		Uri: <any>URI,
-		Token: Token
+		MarkdownStringTextNewlineStyle: standaloneEnums.MarkdownStringTextNewlineStyle,
+		LogLevel: standaloneEnums.LogLevel,
+
+		// Constants
+		errorHandler
 	};
 }

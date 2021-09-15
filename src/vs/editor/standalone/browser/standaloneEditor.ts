@@ -24,7 +24,7 @@ import { IWebWorkerOptions, MonacoWebWorker, createWebWorker as actualCreateWebW
 import * as standaloneEnums from 'vs/editor/common/standalone/standaloneEnums';
 import { Colorizer, IColorizerElementOptions, IColorizerOptions } from 'vs/editor/standalone/browser/colorizer';
 import { SimpleEditorModelResolverService } from 'vs/editor/standalone/browser/simpleServices';
-import { IStandaloneEditorConstructionOptions, IStandaloneCodeEditor, IStandaloneDiffEditor, StandaloneDiffEditor, StandaloneEditor, createTextModel, IStandaloneDiffEditorConstructionOptions } from 'vs/editor/standalone/browser/standaloneCodeEditor';
+import { IStandaloneEditorConstructionOptions, IStandaloneCodeEditor, IStandaloneDiffEditor, StandaloneDiffEditor, StandaloneEditor, createTextModel, IStandaloneDiffEditorConstructionOptions, StandaloneCodeEditor } from 'vs/editor/standalone/browser/standaloneCodeEditor';
 import { DynamicStandaloneServices, IEditorOverrideServices, StaticServices } from 'vs/editor/standalone/browser/standaloneServices';
 import { IStandaloneThemeData, IStandaloneThemeService } from 'vs/editor/standalone/common/standaloneThemeService';
 import { CommandsRegistry, ICommandService } from 'vs/platform/commands/common/commands';
@@ -43,6 +43,11 @@ import { IClipboardService } from 'vs/platform/clipboard/common/clipboardService
 import { StandaloneThemeServiceImpl } from 'vs/editor/standalone/browser/standaloneThemeServiceImpl';
 import { splitLines } from 'vs/base/common/strings';
 import { IModelService } from 'vs/editor/common/services/modelService';
+import { RGBA, HSLA, HSVA, Color } from 'vs/base/common/color';
+import { SyncDescriptor } from 'vs/platform/instantiation/common/descriptors';
+import { ServiceCollection } from 'vs/platform/instantiation/common/serviceCollection';
+import { CodeEditorWidget } from 'vs/editor/browser/widget/codeEditorWidget';
+import { DiffEditorWidget } from 'vs/editor/browser/widget/diffEditorWidget';
 
 type Omit<T, K extends keyof T> = Pick<T, Exclude<keyof T, K>>;
 
@@ -386,6 +391,7 @@ export function createMonacoEditorAPI(): typeof monaco.editor {
 		TextEditorCursorStyle: standaloneEnums.TextEditorCursorStyle,
 		TrackedRangeStickiness: standaloneEnums.TrackedRangeStickiness,
 		WrappingIndent: standaloneEnums.WrappingIndent,
+		ColorScheme: standaloneEnums.ColorScheme,
 
 		// classes
 		ConfigurationChangedEvent: <any>ConfigurationChangedEvent,
@@ -394,10 +400,20 @@ export function createMonacoEditorAPI(): typeof monaco.editor {
 		TextModelResolvedOptions: <any>TextModelResolvedOptions,
 		FindMatch: <any>FindMatch,
 		ApplyUpdateResult: <any>ApplyUpdateResult,
+		RGBA,
+		HSLA,
+		HSVA,
+		Color,
+		SyncDescriptor,
+		CodeEditorWidget: <any>CodeEditorWidget,
+		StandaloneCodeEditor: <any>StandaloneCodeEditor,
+		DiffEditorWidget: <any>DiffEditorWidget,
+		StandaloneDiffEditor: <any>StandaloneDiffEditor,
 
 		// vars
 		EditorType: EditorType,
-		EditorOptions: <any>EditorOptions
-
+		EditorOptions: <any>EditorOptions,
+		ServiceCollection,
+		StaticServices: <any>StaticServices
 	};
 }
