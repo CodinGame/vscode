@@ -22,7 +22,6 @@ import { ExtensionMessageCollector } from 'vs/workbench/services/extensions/comm
 import { ITMSyntaxExtensionPoint, grammarsExtPoint } from 'vs/workbench/services/textMate/common/TMGrammars';
 import { ITextMateService } from 'vs/workbench/services/textMate/browser/textMate';
 import { ITextMateThemingRule, IWorkbenchThemeService, IWorkbenchColorTheme } from 'vs/workbench/services/themes/common/workbenchThemeService';
-import type { IGrammar, StackElement, IOnigLib, IRawTheme } from 'vscode-textmate';
 import { Disposable, IDisposable, dispose } from 'vs/base/common/lifecycle';
 import { IConfigurationService } from 'vs/platform/configuration/common/configuration';
 import { IValidGrammarDefinition, IValidEmbeddedLanguagesMap, IValidTokenTypeMap } from 'vs/workbench/services/textMate/common/TMScopeRegistry';
@@ -47,7 +46,7 @@ export abstract class AbstractTextMateService extends Disposable implements ITex
 	private _grammarDefinitions: IValidGrammarDefinition[] | null;
 	private _grammarFactory: TMGrammarFactory | null;
 	private _tokenizersRegistrations: IDisposable[];
-	protected _currentTheme: IRawTheme | null;
+	protected _currentTheme: import('vscode-textmate').IRawTheme | null;
 	protected _currentTokenColorMap: string[] | null;
 
 	constructor(
@@ -217,7 +216,7 @@ export abstract class AbstractTextMateService extends Disposable implements ITex
 		}
 
 		const [vscodeTextmate, vscodeOniguruma] = await Promise.all([import('vscode-textmate'), this._getVSCodeOniguruma()]);
-		const onigLib: Promise<IOnigLib> = Promise.resolve({
+		const onigLib: Promise<import('vscode-textmate').IOnigLib> = Promise.resolve({
 			createOnigScanner: (sources: string[]) => vscodeOniguruma.createOnigScanner(sources),
 			createOnigString: (str: string) => vscodeOniguruma.createOnigString(str)
 		});
@@ -293,7 +292,7 @@ export abstract class AbstractTextMateService extends Disposable implements ITex
 		this._doUpdateTheme(grammarFactory, this._currentTheme, this._currentTokenColorMap);
 	}
 
-	protected _doUpdateTheme(grammarFactory: TMGrammarFactory | null, theme: IRawTheme, tokenColorMap: string[]): void {
+	protected _doUpdateTheme(grammarFactory: TMGrammarFactory | null, theme: import('vscode-textmate').IRawTheme, tokenColorMap: string[]): void {
 		grammarFactory?.setTheme(theme, tokenColorMap);
 		let colorMap = AbstractTextMateService._toColorMap(tokenColorMap);
 		let cssRules = generateTokensCSSForColorMap(colorMap);
@@ -358,7 +357,7 @@ export abstract class AbstractTextMateService extends Disposable implements ITex
 		return true;
 	}
 
-	public async createGrammar(languageId: string): Promise<IGrammar | null> {
+	public async createGrammar(languageId: string): Promise<import('vscode-textmate').IGrammar | null> {
 		if (!this._languageService.isRegisteredLanguageId(languageId)) {
 			return null;
 		}
@@ -435,7 +434,7 @@ class TMTokenizationSupportWithLineLimit implements ITokenizationSupport {
 		throw new Error('Not supported!');
 	}
 
-	tokenizeEncoded(line: string, hasEOL: boolean, state: StackElement): EncodedTokenizationResult {
+	tokenizeEncoded(line: string, hasEOL: boolean, state: import('vscode-textmate').StackElement): EncodedTokenizationResult {
 		// Do not attempt to tokenize if a line is too long
 		if (line.length >= this._maxTokenizationLineLength) {
 			return nullTokenizeEncoded(this._encodedLanguageId, state);
