@@ -184,6 +184,21 @@ function getMassagedTopLevelDeclarationText(ts: typeof import('typescript'), sou
 				// life..
 			}
 		});
+	} else if (declaration.kind === ts.SyntaxKind.ModuleDeclaration) {
+		let moduleDeclaration = <ts.ModuleDeclaration>declaration;
+		if (moduleDeclaration.body !== undefined && ts.isModuleBlock(moduleDeclaration.body)) {
+			const statements = moduleDeclaration.body.statements;
+			statements.forEach((statement) => {
+				try {
+					let memberText = getNodeText(sourceFile, statement);
+					if (memberText.indexOf('@internal') >= 0) {
+						result = result.replace(memberText, '');
+					}
+				} catch (err) {
+					// life..
+				}
+			});
+		}
 	}
 	result = result.replace(/export default /g, 'export ');
 	result = result.replace(/export declare /g, 'export ');
@@ -599,7 +614,7 @@ class CacheEntry {
 	constructor(
 		public readonly sourceFile: ts.SourceFile,
 		public readonly mtime: number
-	) {}
+	) { }
 }
 
 export class DeclarationResolver {
