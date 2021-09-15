@@ -22,7 +22,6 @@ import { iconRegistry, Codicon } from 'vs/base/common/codicons';
 import { ThemeIcon } from 'vs/platform/theme/common/themeService';
 /**
  * Open ended enum at runtime
- * @internal
  */
 export const enum LanguageId {
 	Null = 0,
@@ -53,7 +52,6 @@ export const enum ColorId {
 
 /**
  * A standard token type. Values are 2^x such that a bit mask can be used.
- * @internal
  */
 export const enum StandardTokenType {
 	Other = 0,
@@ -174,9 +172,6 @@ export interface ILanguageIdCodec {
 	decodeLanguageId(languageId: LanguageId): string;
 }
 
-/**
- * @internal
- */
 export interface ITokenizationSupport {
 
 	getInitialState(): IState;
