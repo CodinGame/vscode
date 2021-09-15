@@ -81,7 +81,9 @@ function getTopLevelDeclaration(ts, sourceFile, typeName) {
             return false /*continue*/;
         }
         // node is ts.VariableStatement
-        if (getNodeText(sourceFile, node).indexOf(typeName) >= 0) {
+        if (getNodeText(sourceFile, node)
+            .substr(node.getLeadingTriviaWidth(sourceFile))
+            .match(new RegExp(` ${typeName}[: ]`))) {
             result = node;
             return true /*stop*/;
         }
