@@ -154,6 +154,9 @@ function createESMSourcesAndResources2(options) {
                 const importedFilename = info.importedFiles[i].fileName;
                 const pos = info.importedFiles[i].pos;
                 const end = info.importedFiles[i].end;
+                if (['vscode-textmate', 'vscode-oniguruma'].includes(importedFilename)) {
+                    continue;
+                }
                 let importedFilepath;
                 if (/^vs\/css!/.test(importedFilename)) {
                     importedFilepath = importedFilename.substr('vs/css!'.length) + '.css';
