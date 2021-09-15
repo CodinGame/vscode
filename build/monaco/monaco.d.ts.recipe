@@ -16,12 +16,8 @@ declare namespace monaco {
 	export interface Environment {
 		globalAPI?: boolean;
 		baseUrl?: string;
-		getWorker?(workerId: string, label: string): Worker;
+		getWorker?(workerId: string, label: string): Promise<Worker> | Worker;
 		getWorkerUrl?(workerId: string, label: string): string;
-	}
-
-	export interface IDisposable {
-		dispose(): void;
 	}
 
 	export interface IEvent<T> {
@@ -38,37 +34,45 @@ declare namespace monaco {
 		dispose(): void;
 	}
 
+#include(vs/base/common/lifecycle): IDisposable, Disposable, DisposableStore
 #include(vs/platform/markers/common/markers): MarkerTag, MarkerSeverity
 #include(vs/base/common/cancellation): CancellationTokenSource, CancellationToken
 #include(vs/base/common/uri): URI, UriComponents
 #include(vs/base/common/keyCodes): KeyCode
 #include(vs/editor/common/standalone/standaloneBase): KeyMod
-#include(vs/base/common/htmlContent): IMarkdownString
+#include(vs/base/common/htmlContent): IMarkdownString, MarkdownString, MarkdownStringTextNewlineStyle
 #include(vs/base/browser/keyboardEvent): IKeyboardEvent
-#include(vs/base/browser/mouseEvent): IMouseEvent
+#include(vs/base/browser/mouseEvent): IMouseEvent, IMouseWheelEvent
 #include(vs/editor/common/editorCommon): IScrollEvent
 #include(vs/editor/common/core/position): IPosition, Position
 #include(vs/editor/common/core/range): IRange, Range
 #include(vs/editor/common/core/selection): ISelection, Selection, SelectionDirection
-#include(vs/editor/common/core/token): Token
+#include(vs/editor/common/core/token;IState=>languages.IState): Token, TokenizationResult, TokenizationResult2
+
+#includeAll(vs/platform/log/common/log):
+#include(vs/base/common/errors): ErrorHandler, errorHandler, ErrorListenerCallback, ErrorListenerUnbind
 }
 
 declare namespace monaco.editor {
 #include(vs/editor/browser/widget/diffNavigator): IDiffNavigator
 #includeAll(vs/editor/standalone/browser/standaloneEditor;modes.=>languages.;editorCommon.=>):
-#include(vs/editor/standalone/common/standaloneThemeService): BuiltinTheme, IStandaloneThemeData, IColors
+#includeAll(vs/editor/standalone/common/standaloneThemeService):
 #include(vs/editor/common/modes/supports/tokenization): ITokenThemeRule
 #include(vs/editor/common/services/webWorker): MonacoWebWorker, IWebWorkerOptions
-#include(vs/editor/standalone/browser/standaloneCodeEditor): IActionDescriptor, IGlobalEditorOptions, IStandaloneEditorConstructionOptions, IStandaloneDiffEditorConstructionOptions, IStandaloneCodeEditor, IStandaloneDiffEditor
-export interface ICommandHandler {
-	(...args: any[]): void;
-}
-#include(vs/platform/contextkey/common/contextkey): IContextKey
-#include(vs/editor/standalone/browser/standaloneServices): IEditorOverrideServices
+#include(vs/editor/browser/widget/codeEditorWidget;editorCommon.=>;editorBrowser.=>;IContextKeyService=>extra.IContextKeyService;IModelService=>extra.IModelService;ICodeEditorService=>extra.ICodeEditorService;ICommandHandler=>extra.ICommandHandler;IContextKey=>extra.IContextKey): CodeEditorWidget
+#include(vs/editor/browser/widget/diffEditorWidget;editorCommon.=>;editorBrowser.=>;IContextKeyService=>extra.IContextKeyService;IModelService=>extra.IModelService;ICodeEditorService=>extra.ICodeEditorService;ICommandHandler=>extra.ICommandHandler;IContextKey=>extra.IContextKey): DiffEditorWidget
+#include(vs/editor/standalone/browser/standaloneCodeEditor;IContextKeyService=>extra.IContextKeyService;IModelService=>extra.IModelService;ICodeEditorService=>extra.ICodeEditorService;ICommandHandler=>extra.ICommandHandler;IContextKey=>extra.IContextKey;StandaloneKeybindingService=>extra.StandaloneKeybindingService): IActionDescriptor, IGlobalEditorOptions, IStandaloneEditorConstructionOptions, IStandaloneDiffEditorConstructionOptions, IStandaloneCodeEditor, IStandaloneDiffEditor, StandaloneCodeEditor, StandaloneDiffEditor
+#includeAll(vs/platform/instantiation/common/descriptors):
+#includeAll(vs/platform/instantiation/common/instantiation;descriptors.=>):
+#includeAll(vs/platform/instantiation/common/serviceCollection):
+#include(vs/editor/standalone/browser/standaloneServices;IModeService=>languages.IModeService;IContextKeyService=>extra.IContextKeyService;IModelService=>extra.IModelService;ICodeEditorService=>extra.ICodeEditorService;IConfigurationService=>extra.IConfigurationService): IEditorOverrideServices, StaticServices
 #include(vs/platform/markers/common/markers): IMarker, IMarkerData, IRelatedInformation
 #include(vs/editor/standalone/browser/colorizer): IColorizerOptions, IColorizerElementOptions
 #include(vs/base/common/scrollable): ScrollbarVisibility
-#include(vs/platform/theme/common/themeService): ThemeColor
+#include(vs/platform/theme/common/theme): ColorScheme
+#includeAll(vs/base/common/color):
+#include(vs/platform/theme/common/colorRegistry): ColorIdentifier
+#includeAll(vs/platform/theme/common/themeService):
 #includeAll(vs/editor/common/model): IScrollEvent
 #includeAll(vs/editor/common/editorCommon;editorOptions.=>): IScrollEvent
 #includeAll(vs/editor/common/model/textModelEvents):
@@ -87,17 +91,85 @@ declare namespace monaco.languages {
 
 #includeAll(vs/editor/standalone/browser/standaloneLanguages;modes.=>;editorCommon.=>editor.;model.=>editor.;IMarkerData=>editor.IMarkerData):
 #includeAll(vs/editor/common/modes/languageConfiguration):
-#includeAll(vs/editor/common/modes;editorCommon.IRange=>IRange;editorCommon.IPosition=>IPosition;editorCommon.=>editor.;IMarkerData=>editor.IMarkerData;model.=>editor.):
-#include(vs/editor/common/services/modeService): ILanguageExtensionPoint
+#includeAll(vs/editor/common/modes;IMarkerData=>editor.IMarkerData;model.=>editor.):
+#include(vs/editor/common/services/modeService): ILanguageExtensionPoint, ILanguageSelection
 #includeAll(vs/editor/standalone/common/monarch/monarchTypes):
 
+#includeAll(vs/editor/common/services/modeService):
+
+#include(vs/editor/common/modes/languageConfigurationRegistry): LanguageConfigurationRegistryImpl, LanguageConfigurationChangeEvent
 }
 
 declare namespace monaco.worker {
 
 #include(vs/editor/common/model/mirrorTextModel): IMirrorTextModel
-#includeAll(vs/editor/common/services/editorSimpleWorker;):
+#includeAll(vs/editor/common/services/editorSimpleWorker):
 
+}
+
+declare namespace monaco.extra {
+#include(vs/base/common/functional): once
+#include(vs/base/common/lifecycle): IReference, ReferenceCollection, AsyncReferenceCollection, toDisposable
+#include(vs/base/common/keybindings): Modifiers, IBaseKeybinding, SimpleKeybinding, ChordKeybinding, Keybinding, ResolvedKeybinding, ResolvedKeybindingPart, KeybindingModifier, ScanCodeBinding
+#include(vs/base/common/keyCodes): KeyCodeUtils, ScanCode
+#include(vs/platform/keyboardLayout/common/keyboardMapper): IKeyboardMapper
+#includeAll(vs/workbench/services/keybinding/common/macLinuxFallbackKeyboardMapper):
+#includeAll(vs/platform/configuration/common/configuration):
+#include(vs/platform/configuration/common/configurationModels): ConfigurationModel, DefaultConfigurationModel
+#include(vs/base/common/actions): IAction
+#includeAll(vs/platform/progress/common/progress):
+
+#include(vs/base/common/collections): IStringDictionary
+#includeAll(vs/base/common/jsonSchema):
+#include(vs/platform/registry/common/platform): Registry, IRegistry
+#includeAll(vs/platform/contextkey/common/contextkey):
+#includeAll(vs/platform/keybinding/common/keybinding):
+#includeAll(vs/workbench/services/keybinding/common/keybindingIO):
+#include(vs/base/common/platform): OperatingSystem, OS
+#includeAll(vs/base/common/keybindingParser):
+#include(vs/base/common/types): TypeConstraint
+#includeAll(vs/platform/commands/common/commands;ServicesAccessor=>editor.ServicesAccessor;ICommand=>ICommandRegistryCommand):
+#includeAll(vs/platform/keybinding/common/keybindingsRegistry;Extensions=>KeybindingExtensions):
+#includeAll(vs/platform/jsonschemas/common/jsonContributionRegistry;Extensions=>JsonContributionExtensions):
+#includeAll(vs/platform/keybinding/common/keybindingResolver):
+#includeAll(vs/platform/keybinding/common/resolvedKeybindingItem): removeElementsAfterNulls
+#include(vs/workbench/services/keybinding/browser/keybindingService): resolveUserKeybindingItems
+#include(vs/platform/configuration/common/configurationRegistry;Extensions=>ConfigurationExtensions): Extensions, IConfigurationRegistry, IConfigurationPropertySchema, IConfigurationNode, EditPresentationTypes, IConfigurationDefaults, IConfigurationDefaultOverride, IRegisteredConfigurationPropertySchema, IExtensionInfo, ConfigurationScope, allSettings
+#includeAll(vs/workbench/contrib/snippets/browser/snippetsFile): SnippetFile
+#include(vs/platform/localizations/common/localizations): ILocalization, ITranslation
+#includeAll(vs/platform/extensions/common/extensions;ICommand=>IExtensionCommand):
+#includeAll(vs/workbench/contrib/snippets/browser/snippets.contribution;LanguageId=>languages.LanguageId):
+#includeAll(vs/workbench/contrib/snippets/browser/snippetCompletionProvider;ITextModel=>editor.ITextModel;CompletionItem=>languages.CompletionItem;CompletionItemLabel=>languages.CompletionItemLabel;CompletionItemKind=>languages.CompletionItemKind;CompletionItemInsertTextRule=>languages.CompletionItemInsertTextRule;CompletionItemProvider=>languages.CompletionItemProvider;IModeService=>languages.IModeService;CompletionContext=>languages.CompletionContext;CompletionList=>languages.CompletionList):
+#include(vs/base/common/filters): FuzzyScore
+#includeAll(vs/editor/contrib/suggest/suggest;modes.=>;ICodeEditor=>editor.ICodeEditor;class CompletionItem=>class SuggestCompletionItem;CompletionItem=>languages.CompletionItem;CompletionList=>languages.CompletionList;CompletionItemProvider=>languages.CompletionItemProvider): provideSuggestionItems, getSuggestionComparator, showSimpleSuggestions, suggestWidgetStatusbarMenu, CompletionOptions, CompletionItemModel, Context, ISuggestItemPreselector
+#includeAll(vs/workbench/contrib/codeEditor/browser/languageConfigurationExtensionPoint;handleConfig=>handleLanguageConfiguration;CommentRule=>languages.CommentRule;CharacterPair=>languages.CharacterPair;IAutoClosingPairConditional=>languages.IAutoClosingPairConditional;IAutoClosingPair=>languages.IAutoClosingPair;FoldingRules=>languages.FoldingRules): LanguageConfigurationFileHandler
+#includeAll(vs/workbench/services/themes/common/workbenchThemeService;IThemeService=>editor.IThemeService;IColorTheme=>editor.IColorTheme):
+#includeAll(vs/workbench/services/extensionResourceLoader/common/extensionResourceLoader):
+#includeAll(vs/platform/theme/common/tokenClassificationRegistry;Extensions=>TokenClassificationExtensions;Color=>editor.Color):
+#include(vs/workbench/services/themes/common/colorThemeData;Color=>editor.Color;ColorIdentifier=>editor.ColorIdentifier;ColorScheme=>editor.ColorScheme;ITokenStyle=>editor.ITokenStyle): ColorThemeData, TokenStyleDefinition, TokenStyleDefinitions
+
+type IRawTheme = import('vscode-textmate').IRawTheme;
+type IOnigLib = import('vscode-textmate').IOnigLib;
+#include(vs/workbench/services/textMate/browser/abstractTextMateService;IModeService=>languages.IModeService;IState=>languages.IState;ITokenizationSupport=>languages.ITokenizationSupport;LanguageId=>languages.LanguageId): parseTextMateGrammar, TMTokenizationSupport, TMTokenization
+#includeAll(vs/workbench/services/textMate/common/TMGrammarFactory;LanguageId=>languages.LanguageId):
+#include(vs/workbench/services/textMate/common/TMGrammars): IEmbeddedLanguagesMap, TokenTypesContribution, ITMSyntaxExtensionPoint
+#include(vs/workbench/services/textMate/common/TMScopeRegistry;StandardTokenType=>languages.StandardTokenType;LanguageId=>languages.LanguageId): IValidGrammarDefinition, IValidEmbeddedLanguagesMap, IValidTokenTypeMap
+
+#include(vs/platform/keybinding/common/abstractKeybindingService;ITelemetryService=>any): AbstractKeybindingService
+#include(vs/editor/standalone/browser/simpleServices;IEditor=>editor.IEditor): StandaloneKeybindingService, SimpleConfigurationService, SimpleEditorModelResolverService
+
+#includeAll(vs/editor/browser/services/abstractCodeEditorService;ICodeEditor=>editor.ICodeEditor;IDiffEditor=>editor.IDiffEditor;ITextModel=>editor.ITextModel;IDecorationRenderOptions=>editor.IDecorationRenderOptions;IModelDecorationOptions=>editor.IModelDecorationOptions):
+#includeAll(vs/editor/browser/services/codeEditorService;ICodeEditor=>editor.ICodeEditor;IDiffEditor=>editor.IDiffEditor;ITextModel=>editor.ITextModel;IDecorationRenderOptions=>editor.IDecorationRenderOptions;IModelDecorationOptions=>editor.IModelDecorationOptions):
+#include(vs/editor/browser/services/codeEditorServiceImpl;IThemeService=>editor.IThemeService;IDecorationRenderOptions=>editor.IDecorationRenderOptions;ICodeEditor=>editor.ICodeEditor;IModelDecorationOptions=>editor.IModelDecorationOptions): CodeEditorServiceImpl, GlobalStyleSheet
+#includeAll(vs/editor/standalone/browser/standaloneCodeServiceImpl;ICodeEditor=>editor.ICodeEditor;IThemeService=>editor.IThemeService):
+
+#include(vs/editor/contrib/folding/folding;IEditorContribution=>editor.IEditorContribution;ICodeEditor=>editor.ICodeEditor): FoldingStateMemento, RangeProvider, FoldingController
+#includeAll(vs/editor/contrib/folding/foldingRanges):
+#include(vs/editor/contrib/folding/foldingModel;ITextModel=>editor.ITextModel;IModelDecorationOptionsIModelDecorationOptions;IModelDeltaDecoration=>editor.IModelDeltaDecoration;IModelDecorationOptions=>editor.IModelDecorationOptions): setCollapseStateForMatchingLines, FoldingModel, CollapseMemento, FoldingModelChangeEvent, IDecorationProvider
+
+#include(vs/platform/editor/common/editor;IEditorModel=>IPlatformEditorModel;IEditorOptions=>editor.IEditorOptions): IEditorModel, IResourceEditorInput, ITextResourceEditorInput, IResourceEditorInput, IBaseUntypedEditorInput, IBaseResourceEditorInput, ITextEditorOptions, IBaseTextResourceEditorInput, ITextEditorSelection, TextEditorSelectionRevealType
+#includeAll(vs/editor/common/services/resolverService;IEditorModel=>IPlatformEditorModel;ITextModel=>editor.ITextModel;ITextSnapshot=>editor.ITextSnapshot):
+#includeAll(vs/editor/common/services/modelService;DocumentSemanticTokensProvider=>languages.DocumentSemanticTokensProvider;DocumentRangeSemanticTokensProvider=>languages.DocumentRangeSemanticTokensProvider;ILanguageSelection=>languages.ILanguageSelection;ITextModel=>editor.ITextModel;ITextModelCreationOptions=>editor.ITextModelCreationOptions):
 }
 
 //dtsv=3
