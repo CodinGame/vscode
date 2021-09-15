@@ -23,7 +23,6 @@ import { ISingleEditOperation } from 'vs/editor/common/core/editOperation';
 
 /**
  * Open ended enum at runtime
- * @internal
  */
 export const enum LanguageId {
 	Null = 0,
@@ -45,7 +44,6 @@ export const enum FontStyle {
 
 /**
  * Open ended enum at runtime
- * @internal
  */
 export const enum ColorId {
 	None = 0,
@@ -55,7 +53,6 @@ export const enum ColorId {
 
 /**
  * A standard token type.
- * @internal
  */
 export const enum StandardTokenType {
 	Other = 0,
@@ -199,9 +196,6 @@ export class TokenMetadata {
 	}
 }
 
-/**
- * @internal
- */
 export interface ITokenPresentation {
 	foreground: ColorId;
 	italic: boolean;
@@ -233,9 +227,6 @@ export class Token {
 	}
 }
 
-/**
- * @internal
- */
 export class TokenizationResult {
 	_tokenizationResultBrand: void = undefined;
 
@@ -248,9 +239,6 @@ export class TokenizationResult {
 	}
 }
 
-/**
- * @internal
- */
 export class EncodedTokenizationResult {
 	_encodedTokenizationResultBrand: void = undefined;
 
@@ -269,9 +257,6 @@ export class EncodedTokenizationResult {
 	}
 }
 
-/**
- * @internal
- */
 export interface ITokenizationSupport {
 
 	getInitialState(): IState;
