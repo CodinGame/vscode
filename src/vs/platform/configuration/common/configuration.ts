@@ -11,6 +11,9 @@ import { IWorkspaceFolder } from 'vs/platform/workspace/common/workspace';
 
 export const IConfigurationService = createDecorator<IConfigurationService>('configurationService');
 
+/**
+ * @internal
+ */
 export function isConfigurationOverrides(thing: any): thing is IConfigurationOverrides {
 	return thing
 		&& typeof thing === 'object'
@@ -23,6 +26,9 @@ export interface IConfigurationOverrides {
 	resource?: URI | null;
 }
 
+/**
+ * @internal
+ */
 export function isConfigurationUpdateOverrides(thing: any): thing is IConfigurationUpdateOverrides {
 	return thing
 		&& typeof thing === 'object'
@@ -42,6 +48,9 @@ export const enum ConfigurationTarget {
 	DEFAULT,
 	MEMORY
 }
+/**
+ * @internal
+ */
 export function ConfigurationTargetToString(configurationTarget: ConfigurationTarget) {
 	switch (configurationTarget) {
 		case ConfigurationTarget.USER: return 'USER';
@@ -96,6 +105,9 @@ export interface IConfigurationValue<T> {
 export interface IConfigurationService {
 	readonly _serviceBrand: undefined;
 
+	/**
+	 * @internal
+	 */
 	onDidChangeConfiguration: Event<IConfigurationChangeEvent>;
 
 	getConfigurationData(): IConfigurationData | null;
@@ -138,6 +150,9 @@ export interface IConfigurationService {
 
 	inspect<T>(key: string, overrides?: IConfigurationOverrides): IConfigurationValue<Readonly<T>>;
 
+	/**
+	 * @internal
+	 */
 	reloadConfiguration(target?: ConfigurationTarget | IWorkspaceFolder): Promise<void>;
 
 	keys(): {
@@ -175,6 +190,9 @@ export interface IConfigurationCompareResult {
 	overrides: [string, string[]][];
 }
 
+/**
+ * @internal
+ */
 export function toValuesTree(properties: { [qualifiedKey: string]: any }, conflictReporter: (message: string) => void): any {
 	const root = Object.create(null);
 
@@ -217,6 +235,9 @@ export function addToValueTree(settingsTreeRoot: any, key: string, value: any, c
 	}
 }
 
+/**
+ * @internal
+ */
 export function removeFromValueTree(valueTree: any, key: string): void {
 	const segments = key.split('.');
 	doRemoveFromValueTree(valueTree, segments);
@@ -244,6 +265,9 @@ function doRemoveFromValueTree(valueTree: any, segments: string[]): void {
 /**
  * A helper function to get the configuration value with a specific settings path (e.g. config.some.setting)
  */
+/**
+ * @internal
+ */
 export function getConfigurationValue<T>(config: any, settingPath: string, defaultValue?: T): T {
 	function accessSetting(config: any, path: string[]): any {
 		let current = config;
@@ -262,6 +286,9 @@ export function getConfigurationValue<T>(config: any, settingPath: string, defau
 	return typeof result === 'undefined' ? defaultValue : result;
 }
 
+/**
+ * @internal
+ */
 export function merge(base: any, add: any, overwrite: boolean): void {
 	Object.keys(add).forEach(key => {
 		if (key !== '__proto__') {
@@ -278,6 +305,9 @@ export function merge(base: any, add: any, overwrite: boolean): void {
 	});
 }
 
+/**
+ * @internal
+ */
 export function getMigratedSettingValue<T>(configurationService: IConfigurationService, currentSettingName: string, legacySettingName: string): T {
 	const setting = configurationService.inspect<T>(currentSettingName);
 	const legacySetting = configurationService.inspect<T>(legacySettingName);

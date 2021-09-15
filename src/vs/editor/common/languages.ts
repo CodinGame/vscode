@@ -210,9 +210,6 @@ export interface ITokenPresentation {
 	strikethrough: boolean;
 }
 
-/**
- * @internal
- */
 export interface ILanguageIdCodec {
 	encodeLanguageId(languageId: string): LanguageId;
 	decodeLanguageId(languageId: LanguageId): string;

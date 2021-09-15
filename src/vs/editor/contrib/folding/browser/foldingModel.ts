@@ -10,6 +10,9 @@ import { FoldingRegion, FoldingRegions, ILineRange } from './foldingRanges';
 export interface IDecorationProvider {
 	getDecorationOption(isCollapsed: boolean, isHidden: boolean): IModelDecorationOptions;
 	deltaDecorations(oldDecorations: string[], newDecorations: IModelDeltaDecoration[]): string[];
+	/**
+	 * @internal
+	 */
 	changeDecorations<T>(callback: (changeAccessor: IModelDecorationsChangeAccessor) => T): T | null;
 }
 
@@ -237,6 +240,9 @@ export class FoldingModel {
 		return null;
 	}
 
+	/**
+	 * @internal
+	 */
 	getRegionsInside(region: FoldingRegion | null, filter?: RegionFilter | RegionFilterWithLevel): FoldingRegion[] {
 		let result: FoldingRegion[] = [];
 		let index = region ? region.regionIndex + 1 : 0;

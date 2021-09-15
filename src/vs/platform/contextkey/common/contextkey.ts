@@ -244,6 +244,9 @@ export abstract class ContextKeyExpr {
 	}
 }
 
+/**
+ * @internal
+ */
 export function expressionsAreEqualWithConstantSubstitution(a: ContextKeyExpression | null | undefined, b: ContextKeyExpression | null | undefined): boolean {
 	const aExpr = a ? a.substituteConstants() : undefined;
 	const bExpr = b ? b.substituteConstants() : undefined;
@@ -1147,7 +1150,7 @@ function eliminateConstantsInArray(arr: ContextKeyExpression[]): (ContextKeyExpr
 	return newArr;
 }
 
-class ContextKeyAndExpr implements IContextKeyExpression {
+export class ContextKeyAndExpr implements IContextKeyExpression {
 
 	public static create(_expr: ReadonlyArray<ContextKeyExpression | null | undefined>, negated: ContextKeyExpression | null): ContextKeyExpression | undefined {
 		return ContextKeyAndExpr._normalizeArr(_expr, negated);
@@ -1330,7 +1333,7 @@ class ContextKeyAndExpr implements IContextKeyExpression {
 	}
 }
 
-class ContextKeyOrExpr implements IContextKeyExpression {
+export class ContextKeyOrExpr implements IContextKeyExpression {
 
 	public static create(_expr: ReadonlyArray<ContextKeyExpression | null | undefined>, negated: ContextKeyExpression | null, extraRedundantCheck: boolean): ContextKeyExpression | undefined {
 		return ContextKeyOrExpr._normalizeArr(_expr, negated, extraRedundantCheck);
@@ -1613,6 +1616,9 @@ export interface IContextKeyService {
 	updateParent(parentContextKeyService: IContextKeyService): void;
 }
 
+/**
+ * @internal
+ */
 export const SET_CONTEXT_COMMAND_ID = 'setContext';
 
 function cmp1(key1: string, key2: string): number {
@@ -1642,6 +1648,7 @@ function cmp2(key1: string, value1: any, key2: string, value2: any): number {
 }
 
 /**
+ * @internal
  * Returns true if it is provable `p` implies `q`.
  */
 export function implies(p: ContextKeyExpression, q: ContextKeyExpression): boolean {

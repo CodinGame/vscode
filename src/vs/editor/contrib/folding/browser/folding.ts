@@ -95,6 +95,9 @@ export class FoldingController extends Disposable implements IEditorContribution
 	private readonly localToDispose = this._register(new DisposableStore());
 	private mouseDownInfo: { lineNumber: number, iconClicked: boolean } | null;
 
+	/**
+	 * @internal
+	 */
 	constructor(
 		editor: ICodeEditor,
 		@IContextKeyService private readonly contextKeyService: IContextKeyService,

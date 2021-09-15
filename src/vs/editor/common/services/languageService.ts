@@ -18,6 +18,9 @@ export class LanguageService extends Disposable implements ILanguageService {
 	static instanceCount = 0;
 
 	private readonly _encounteredLanguages: Set<string>;
+	/**
+	 * @internal
+	 */
 	protected readonly _registry: LanguagesRegistry;
 	public readonly languageIdCodec: ILanguageIdCodec;
 
@@ -61,6 +64,9 @@ export class LanguageService extends Disposable implements ILanguageService {
 		return this._registry.getMimeType(languageId);
 	}
 
+	/**
+	 * @internal
+	 */
 	public getIcon(languageId: string): ILanguageIcon | null {
 		return this._registry.getIcon(languageId);
 	}

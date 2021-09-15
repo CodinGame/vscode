@@ -8,7 +8,13 @@ export interface ILineRange {
 	endLineNumber: number;
 }
 
+/**
+ * @internal
+ */
 export const MAX_FOLDING_REGIONS = 0xFFFF;
+/**
+ * @internal
+ */
 export const MAX_LINE_NUMBER = 0xFFFFFF;
 
 const MASK_INDENT = 0xFF000000;

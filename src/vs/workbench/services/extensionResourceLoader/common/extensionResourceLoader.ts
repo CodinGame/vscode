@@ -18,8 +18,14 @@ import { TelemetryLevel } from 'vs/platform/telemetry/common/telemetry';
 import { getTelemetryLevel, supportsTelemetry } from 'vs/platform/telemetry/common/telemetryUtils';
 import { RemoteAuthorities } from 'vs/base/common/network';
 
+/**
+ * @internal
+ */
 export const WEB_EXTENSION_RESOURCE_END_POINT = 'web-extension-resource';
 
+/**
+ * @internal
+ */
 export const IExtensionResourceLoaderService = createDecorator<IExtensionResourceLoaderService>('extensionResourceLoaderService');
 
 /**
@@ -35,16 +41,21 @@ export interface IExtensionResourceLoaderService {
 
 	/**
 	 * Returns whether the gallery provides extension resources.
+	 * @internal
 	 */
 	readonly supportsExtensionGalleryResources: boolean;
 
 	/**
 	 * Computes the URL of a extension gallery resource. Returns `undefined` if gallery does not provide extension resources.
+	 * @internal
 	 */
 	getExtensionGalleryResourceURL(galleryExtension: { publisher: string, name: string, version: string }, path?: string): URI | undefined;
 }
 
 
+/**
+ * @internal
+ */
 export abstract class AbstractExtensionResourceLoaderService implements IExtensionResourceLoaderService {
 
 	readonly _serviceBrand: undefined;

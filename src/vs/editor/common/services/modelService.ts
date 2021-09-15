@@ -115,6 +115,9 @@ interface IRawConfig {
 
 const DEFAULT_EOL = (platform.isLinux || platform.isMacintosh) ? DefaultEndOfLine.LF : DefaultEndOfLine.CRLF;
 
+/**
+ * @internal
+ */
 export interface EditStackPastFutureElements {
 	past: EditStackElement[];
 	future: EditStackElement[];
@@ -158,6 +161,9 @@ export class ModelService extends Disposable implements IModelService {
 	private _disposedModelsHeapSize: number;
 	private readonly _semanticStyling: SemanticStyling;
 
+	/**
+	 * @internal
+	 */
 	constructor(
 		@IConfigurationService private readonly _configurationService: IConfigurationService,
 		@ITextResourcePropertiesService private readonly _resourcePropertiesService: ITextResourcePropertiesService,
@@ -424,6 +430,9 @@ export class ModelService extends Disposable implements IModelService {
 		return modelData;
 	}
 
+	/**
+	 * @internal
+	 */
 	public updateModel(model: ITextModel, value: string | ITextBufferFactory): void {
 		const options = this.getCreationOptions(model.getLanguageId(), model.uri, model.isForSimpleWidget);
 		const { textBuffer, disposable } = createTextBuffer(value, options.defaultEOL);
@@ -468,6 +477,7 @@ export class ModelService extends Disposable implements IModelService {
 
 	/**
 	 * Compute edits to bring `model` to the state of `textSource`.
+	 * @internal
 	 */
 	public static _computeEdits(model: ITextModel, textBuffer: ITextBuffer): IIdentifiedSingleEditOperation[] {
 		const modelLineCount = model.getLineCount();
@@ -497,6 +507,9 @@ export class ModelService extends Disposable implements IModelService {
 		return [EditOperation.replaceMove(oldRange, textBuffer.getValueInRange(newRange, EndOfLinePreference.TextDefined))];
 	}
 
+	/**
+	 * @internal
+	 */
 	public createModel(value: string | ITextBufferFactory, languageSelection: ILanguageSelection | null, resource?: URI, isForSimpleWidget: boolean = false): ITextModel {
 		let modelData: ModelData;
 
@@ -553,6 +566,9 @@ export class ModelService extends Disposable implements IModelService {
 		return modelData.model;
 	}
 
+	/**
+	 * @internal
+	 */
 	public getSemanticTokensProviderStyling(provider: DocumentTokensProvider): SemanticTokensProviderStyling {
 		return this._semanticStyling.get(provider);
 	}
@@ -640,8 +656,14 @@ export interface ILineSequence {
 	getLineContent(lineNumber: number): string;
 }
 
+/**
+ * @internal
+ */
 export const SEMANTIC_HIGHLIGHTING_SETTING_ID = 'editor.semanticHighlighting';
 
+/**
+ * @internal
+ */
 export function isSemanticColoringEnabled(model: ITextModel, themeService: IThemeService, configurationService: IConfigurationService): boolean {
 	const setting = configurationService.getValue<IEditorSemanticHighlightingOptions>(SEMANTIC_HIGHLIGHTING_SETTING_ID, { overrideIdentifier: model.getLanguageId(), resource: model.uri })?.enabled;
 	if (typeof setting === 'boolean') {
@@ -707,6 +729,9 @@ class SemanticColoringFeature extends Disposable {
 	}
 }
 
+/**
+ * @internal
+ */
 class SemanticStyling extends Disposable {
 
 	private _caches: WeakMap<DocumentTokensProvider, SemanticTokensProviderStyling>;
@@ -743,6 +768,9 @@ class SemanticTokensResponse {
 	}
 }
 
+/**
+ * @internal
+ */
 export class ModelSemanticColoring extends Disposable {
 
 	public static REQUEST_MIN_DELAY = 300;

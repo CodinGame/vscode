@@ -11,6 +11,9 @@ import { LinkedList } from 'vs/base/common/linkedList';
 import { TypeConstraint, validateConstraints } from 'vs/base/common/types';
 import { createDecorator, ServicesAccessor } from 'vs/platform/instantiation/common/instantiation';
 
+/**
+ * @internal
+ */
 export const ICommandService = createDecorator<ICommandService>('commandService');
 
 export interface ICommandEvent {
@@ -140,6 +143,9 @@ export const CommandsRegistry: ICommandRegistry = new class implements ICommandR
 	}
 };
 
+/**
+ * @internal
+ */
 export const NullCommandService: ICommandService = {
 	_serviceBrand: undefined,
 	onWillExecuteCommand: () => Disposable.None,

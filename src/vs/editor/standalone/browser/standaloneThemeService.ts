@@ -211,6 +211,9 @@ export class StandaloneThemeService extends Disposable implements IStandaloneThe
 	public readonly onDidFileIconThemeChange = this._onFileIconThemeChange.event;
 
 	private readonly _onProductIconThemeChange = this._register(new Emitter<IProductIconTheme>());
+	/**
+	 * @internal
+	 */
 	public readonly onDidProductIconThemeChange = this._onProductIconThemeChange.event;
 
 	private readonly _environment: IEnvironmentService = Object.create(null);
@@ -397,6 +400,9 @@ export class StandaloneThemeService extends Disposable implements IStandaloneThe
 		};
 	}
 
+	/**
+	 * @internal
+	 */
 	public getProductIconTheme(): IProductIconTheme {
 		return this._builtInProductIconTheme;
 	}

@@ -472,10 +472,22 @@ export class Color {
 	static readonly transparent = new Color(new RGBA(0, 0, 0, 0));
 }
 
+/**
+ * @internal
+ */
 export namespace Color {
+	/**
+	 * @internal
+	 */
 	export namespace Format {
+		/**
+		 * @internal
+		 */
 		export namespace CSS {
 
+			/**
+			 * @internal
+			 */
 			export function formatRGB(color: Color): string {
 				if (color.rgba.a === 1) {
 					return `rgb(${color.rgba.r}, ${color.rgba.g}, ${color.rgba.b})`;
@@ -484,10 +496,16 @@ export namespace Color {
 				return Color.Format.CSS.formatRGBA(color);
 			}
 
+			/**
+			 * @internal
+			 */
 			export function formatRGBA(color: Color): string {
 				return `rgba(${color.rgba.r}, ${color.rgba.g}, ${color.rgba.b}, ${+(color.rgba.a).toFixed(2)})`;
 			}
 
+			/**
+			 * @internal
+			 */
 			export function formatHSL(color: Color): string {
 				if (color.hsla.a === 1) {
 					return `hsl(${color.hsla.h}, ${(color.hsla.s * 100).toFixed(2)}%, ${(color.hsla.l * 100).toFixed(2)}%)`;
@@ -496,6 +514,9 @@ export namespace Color {
 				return Color.Format.CSS.formatHSLA(color);
 			}
 
+			/**
+			 * @internal
+			 */
 			export function formatHSLA(color: Color): string {
 				return `hsla(${color.hsla.h}, ${(color.hsla.s * 100).toFixed(2)}%, ${(color.hsla.l * 100).toFixed(2)}%, ${color.hsla.a.toFixed(2)})`;
 			}
@@ -508,6 +529,9 @@ export namespace Color {
 			/**
 			 * Formats the color as #RRGGBB
 			 */
+			/**
+			 * @internal
+			 */
 			export function formatHex(color: Color): string {
 				return `#${_toTwoDigitHex(color.rgba.r)}${_toTwoDigitHex(color.rgba.g)}${_toTwoDigitHex(color.rgba.b)}`;
 			}
@@ -515,6 +539,9 @@ export namespace Color {
 			/**
 			 * Formats the color as #RRGGBBAA
 			 * If 'compact' is set, colors without transparancy will be printed as #RRGGBB
+			 */
+			/**
+			 * @internal
 			 */
 			export function formatHexA(color: Color, compact = false): string {
 				if (compact && color.rgba.a === 1) {
@@ -526,6 +553,9 @@ export namespace Color {
 
 			/**
 			 * The default format will use HEX if opaque and RGBA otherwise.
+			 */
+			/**
+			 * @internal
 			 */
 			export function format(color: Color): string {
 				if (color.isOpaque()) {
@@ -539,6 +569,9 @@ export namespace Color {
 			 * Converts an Hex color value to a Color.
 			 * returns r, g, and b are contained in the set [0, 255]
 			 * @param hex string (#RGB, #RGBA, #RRGGBB or #RRGGBBAA).
+			 */
+			/**
+			 * @internal
 			 */
 			export function parseHex(hex: string): Color | null {
 				const length = hex.length;
