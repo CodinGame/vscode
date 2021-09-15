@@ -7,14 +7,28 @@ import * as descriptors from './descriptors';
 import { ServiceCollection } from './serviceCollection';
 
 // ------ internal util
-
+/**
+ * @internal
+ */
 export namespace _util {
 
+	/**
+	 * @internal
+	 */
 	export const serviceIds = new Map<string, ServiceIdentifier<any>>();
 
+	/**
+	 * @internal
+	 */
 	export const DI_TARGET = '$di$target';
+	/**
+	 * @internal
+	 */
 	export const DI_DEPENDENCIES = '$di$dependencies';
 
+	/**
+	 * @internal
+	 */
 	export function getServiceDependencies(ctor: any): { id: ServiceIdentifier<any>, index: number, optional: boolean }[] {
 		return ctor[DI_DEPENDENCIES] || [];
 	}
@@ -61,10 +75,19 @@ export interface IConstructorSignature8<A1, A2, A3, A4, A5, A6, A7, A8, T> {
 }
 
 export interface ServicesAccessor {
+	/**
+	 * @internal
+	 */
 	get<T>(id: ServiceIdentifier<T>): T;
+	/**
+	 * @internal
+	 */
 	get<T>(id: ServiceIdentifier<T>, isOptional: typeof optional): T | undefined;
 }
 
+/**
+ * @internal
+ */
 export const IInstantiationService = createDecorator<IInstantiationService>('instantiationService');
 
 /**
@@ -136,6 +159,9 @@ function storeServiceDependency(id: Function, target: Function, index: number, o
 /**
  * The *only* valid way to create a {{ServiceIdentifier}}.
  */
+/**
+ * @internal
+ */
 export function createDecorator<T>(serviceId: string): ServiceIdentifier<T> {
 
 	if (_util.serviceIds.has(serviceId)) {
@@ -155,6 +181,9 @@ export function createDecorator<T>(serviceId: string): ServiceIdentifier<T> {
 	return id;
 }
 
+/**
+ * @internal
+ */
 export function refineServiceDecorator<T1, T extends T1>(serviceIdentifier: ServiceIdentifier<T1>): ServiceIdentifier<T> {
 	return <ServiceIdentifier<T>>serviceIdentifier;
 }
@@ -162,6 +191,7 @@ export function refineServiceDecorator<T1, T extends T1>(serviceIdentifier: Serv
 /**
  * Mark a service dependency as optional.
  * @deprecated Avoid, see https://github.com/microsoft/vscode/issues/119440
+ * @internal
  */
 export function optional<T>(serviceIdentifier: ServiceIdentifier<T>) {
 

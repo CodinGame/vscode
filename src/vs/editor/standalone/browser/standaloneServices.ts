@@ -102,6 +102,9 @@ export module StaticServices {
 		return r;
 	}
 
+	/**
+	 * @internal
+	 */
 	export function init(overrides: IEditorOverrideServices): [ServiceCollection, IInstantiationService] {
 		// Create a fresh service collection
 		let result = new ServiceCollection();
@@ -133,20 +136,44 @@ export module StaticServices {
 	const configurationServiceImpl = new SimpleConfigurationService();
 	export const configurationService = define(IConfigurationService, () => configurationServiceImpl);
 
+	/**
+	 * @internal
+	 */
 	export const resourceConfigurationService = define(ITextResourceConfigurationService, () => new SimpleResourceConfigurationService(configurationServiceImpl));
 
+	/**
+	 * @internal
+	 */
 	export const resourcePropertiesService = define(ITextResourcePropertiesService, () => new SimpleResourcePropertiesService(configurationServiceImpl));
 
+	/**
+	 * @internal
+	 */
 	export const contextService = define(IWorkspaceContextService, () => new SimpleWorkspaceContextService());
 
+	/**
+	 * @internal
+	 */
 	export const labelService = define(ILabelService, () => new SimpleUriLabelService());
 
+	/**
+	 * @internal
+	 */
 	export const telemetryService = define(ITelemetryService, () => new StandaloneTelemetryService());
 
+	/**
+	 * @internal
+	 */
 	export const dialogService = define(IDialogService, () => new SimpleDialogService());
 
+	/**
+	 * @internal
+	 */
 	export const notificationService = define(INotificationService, () => new SimpleNotificationService());
 
+	/**
+	 * @internal
+	 */
 	export const markerService = define(IMarkerService, () => new MarkerService());
 
 	export const modeService = define(IModeService, (o) => new ModeServiceImpl());
@@ -155,6 +182,9 @@ export module StaticServices {
 
 	export const logService = define(ILogService, () => new LogService(new ConsoleLogger()));
 
+	/**
+	 * @internal
+	 */
 	export const undoRedoService = define(IUndoRedoService, (o) => new UndoRedoService(dialogService.get(o), notificationService.get(o)));
 
 	export const languageConfigurationService = define(ILanguageConfigurationService, (o) => new LanguageConfigurationService(configurationService.get(o), modeService.get(o)));
@@ -173,16 +203,28 @@ export module StaticServices {
 			)
 	);
 
+	/**
+	 * @internal
+	 */
 	export const markerDecorationsService = define(IMarkerDecorationsService, (o) => new MarkerDecorationsService(modelService.get(o), markerService.get(o)));
 
 	export const contextKeyService = define(IContextKeyService, (o) => new ContextKeyService(configurationService.get(o)));
 
 	export const codeEditorService = define(ICodeEditorService, (o) => new StandaloneCodeEditorServiceImpl(null, contextKeyService.get(o), standaloneThemeService.get(o)));
 
+	/**
+	 * @internal
+	 */
 	export const editorProgressService = define(IEditorProgressService, () => new SimpleEditorProgressService());
 
+	/**
+	 * @internal
+	 */
 	export const storageService = define(IStorageService, () => new InMemoryStorageService());
 
+	/**
+	 * @internal
+	 */
 	export const editorWorkerService = define(IEditorWorkerService, (o) => new EditorWorkerServiceImpl(modelService.get(o), resourceConfigurationService.get(o), logService.get(o)));
 }
 

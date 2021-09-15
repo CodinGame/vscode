@@ -13,8 +13,14 @@ import { createDecorator } from 'vs/platform/instantiation/common/instantiation'
 import { Registry } from 'vs/platform/registry/common/platform';
 import { IWorkspaceFolder } from 'vs/platform/workspace/common/workspace';
 
+/**
+ * @internal
+ */
 export const IConfigurationService = createDecorator<IConfigurationService>('configurationService');
 
+/**
+ * @internal
+ */
 export function isConfigurationOverrides(thing: any): thing is IConfigurationOverrides {
 	return thing
 		&& typeof thing === 'object'
@@ -36,6 +42,9 @@ export const enum ConfigurationTarget {
 	DEFAULT,
 	MEMORY
 }
+/**
+ * @internal
+ */
 export function ConfigurationTargetToString(configurationTarget: ConfigurationTarget) {
 	switch (configurationTarget) {
 		case ConfigurationTarget.USER: return 'USER';
@@ -90,6 +99,9 @@ export interface IConfigurationValue<T> {
 export interface IConfigurationService {
 	readonly _serviceBrand: undefined;
 
+	/**
+	 * @internal
+	 */
 	onDidChangeConfiguration: Event<IConfigurationChangeEvent>;
 
 	getConfigurationData(): IConfigurationData | null;
@@ -114,6 +126,9 @@ export interface IConfigurationService {
 
 	inspect<T>(key: string, overrides?: IConfigurationOverrides): IConfigurationValue<Readonly<T>>;
 
+	/**
+	 * @internal
+	 */
 	reloadConfiguration(target?: ConfigurationTarget | IWorkspaceFolder): Promise<void>;
 
 	keys(): {
@@ -151,6 +166,9 @@ export interface IConfigurationCompareResult {
 	overrides: [string, string[]][];
 }
 
+/**
+ * @internal
+ */
 export function compare(from: IConfigurationModel | undefined, to: IConfigurationModel | undefined): IConfigurationCompareResult {
 	const added = to
 		? from ? to.keys.filter(key => from.keys.indexOf(key) === -1) : [...to.keys]
@@ -216,6 +234,9 @@ export function compare(from: IConfigurationModel | undefined, to: IConfiguratio
 	return { added, removed, updated, overrides };
 }
 
+/**
+ * @internal
+ */
 export function toOverrides(raw: any, conflictReporter: (message: string) => void): IOverrides[] {
 	const overrides: IOverrides[] = [];
 	for (const key of Object.keys(raw)) {
@@ -234,6 +255,9 @@ export function toOverrides(raw: any, conflictReporter: (message: string) => voi
 	return overrides;
 }
 
+/**
+ * @internal
+ */
 export function toValuesTree(properties: { [qualifiedKey: string]: any }, conflictReporter: (message: string) => void): any {
 	const root = Object.create(null);
 
@@ -276,6 +300,9 @@ export function addToValueTree(settingsTreeRoot: any, key: string, value: any, c
 	}
 }
 
+/**
+ * @internal
+ */
 export function removeFromValueTree(valueTree: any, key: string): void {
 	const segments = key.split('.');
 	doRemoveFromValueTree(valueTree, segments);
@@ -303,6 +330,9 @@ function doRemoveFromValueTree(valueTree: any, segments: string[]): void {
 /**
  * A helper function to get the configuration value with a specific settings path (e.g. config.some.setting)
  */
+/**
+ * @internal
+ */
 export function getConfigurationValue<T>(config: any, settingPath: string, defaultValue?: T): T {
 	function accessSetting(config: any, path: string[]): any {
 		let current = config;
@@ -321,6 +351,9 @@ export function getConfigurationValue<T>(config: any, settingPath: string, defau
 	return typeof result === 'undefined' ? defaultValue : result;
 }
 
+/**
+ * @internal
+ */
 export function merge(base: any, add: any, overwrite: boolean): void {
 	Object.keys(add).forEach(key => {
 		if (key !== '__proto__') {
@@ -337,11 +370,17 @@ export function merge(base: any, add: any, overwrite: boolean): void {
 	});
 }
 
+/**
+ * @internal
+ */
 export function getConfigurationKeys(): string[] {
 	const properties = Registry.as<IConfigurationRegistry>(Extensions.Configuration).getConfigurationProperties();
 	return Object.keys(properties);
 }
 
+/**
+ * @internal
+ */
 export function getDefaultValues(): any {
 	const valueTreeRoot: any = Object.create(null);
 	const properties = Registry.as<IConfigurationRegistry>(Extensions.Configuration).getConfigurationProperties();
@@ -354,10 +393,16 @@ export function getDefaultValues(): any {
 	return valueTreeRoot;
 }
 
+/**
+ * @internal
+ */
 export function keyFromOverrideIdentifier(overrideIdentifier: string): string {
 	return `[${overrideIdentifier}]`;
 }
 
+/**
+ * @internal
+ */
 export function getMigratedSettingValue<T>(configurationService: IConfigurationService, currentSettingName: string, legacySettingName: string): T {
 	const setting = configurationService.inspect<T>(currentSettingName);
 	const legacySetting = configurationService.inspect<T>(legacySettingName);

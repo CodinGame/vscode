@@ -13,6 +13,9 @@ import * as platform from 'vs/platform/registry/common/platform';
 import { ColorIdentifier } from 'vs/platform/theme/common/colorRegistry';
 import { ColorScheme } from 'vs/platform/theme/common/theme';
 
+/**
+ * @internal
+ */
 export const IThemeService = createDecorator<IThemeService>('themeService');
 
 export interface ThemeColor {
@@ -20,28 +23,46 @@ export interface ThemeColor {
 }
 
 export namespace ThemeColor {
+	/**
+	 * @internal
+	 */
 	export function isThemeColor(obj: any): obj is ThemeColor {
 		return obj && typeof obj === 'object' && typeof (<ThemeColor>obj).id === 'string';
 	}
 }
 
+/**
+ * @internal
+ */
 export function themeColorFromId(id: ColorIdentifier) {
 	return { id };
 }
 
 // theme icon
+/**
+ * @internal
+ */
 export interface ThemeIcon {
 	readonly id: string;
 	readonly color?: ThemeColor;
 }
 
+/**
+ * @internal
+ */
 export namespace ThemeIcon {
+	/**
+	 * @internal
+	 */
 	export function isThemeIcon(obj: any): obj is ThemeIcon {
 		return obj && typeof obj === 'object' && typeof (<ThemeIcon>obj).id === 'string' && (typeof (<ThemeIcon>obj).color === 'undefined' || ThemeColor.isThemeColor((<ThemeIcon>obj).color));
 	}
 
 	const _regexFromString = new RegExp(`^\\$\\((${CSSIcon.iconNameExpression}(?:${CSSIcon.iconModifierExpression})?)\\)$`);
 
+	/**
+	 * @internal
+	 */
 	export function fromString(str: string): ThemeIcon | undefined {
 		const match = _regexFromString.exec(str);
 		if (!match) {
@@ -51,6 +72,9 @@ export namespace ThemeIcon {
 		return { id: name };
 	}
 
+	/**
+	 * @internal
+	 */
 	export function modify(icon: ThemeIcon, modifier: 'disabled' | 'spin' | undefined): ThemeIcon {
 		let id = icon.id;
 		const tildeIndex = id.lastIndexOf('~');
@@ -63,22 +87,46 @@ export namespace ThemeIcon {
 		return { id };
 	}
 
+	/**
+	 * @internal
+	 */
 	export function isEqual(ti1: ThemeIcon, ti2: ThemeIcon): boolean {
 		return ti1.id === ti2.id && ti1.color?.id === ti2.color?.id;
 	}
 
+	/**
+	 * @internal
+	 */
 	export function asThemeIcon(codicon: Codicon, color?: string): ThemeIcon {
 		return { id: codicon.id, color: color ? themeColorFromId(color) : undefined };
 	}
 
+	/**
+	 * @internal
+	 */
 	export const asClassNameArray: (icon: ThemeIcon) => string[] = CSSIcon.asClassNameArray;
+	/**
+	 * @internal
+	 */
 	export const asClassName: (icon: ThemeIcon) => string = CSSIcon.asClassName;
+	/**
+	 * @internal
+	 */
 	export const asCSSSelector: (icon: ThemeIcon) => string = CSSIcon.asCSSSelector;
 }
 
+/**
+ * @internal
+ */
 export const FileThemeIcon = Codicon.file;
+/**
+ * @internal
+ */
 export const FolderThemeIcon = Codicon.folder;
 
+/**
+ * @internal
+ */
 export function getThemeTypeSelector(type: ColorScheme): string {
 	switch (type) {
 		case ColorScheme.DARK: return 'vs-dark';
@@ -130,16 +178,25 @@ export interface IColorTheme {
 	readonly semanticHighlighting: boolean;
 }
 
+/**
+ * @internal
+ */
 export interface IFileIconTheme {
 	readonly hasFileIcons: boolean;
 	readonly hasFolderIcons: boolean;
 	readonly hidesExplorerArrows: boolean;
 }
 
+/**
+ * @internal
+ */
 export interface ICssStyleCollector {
 	addRule(rule: string): void;
 }
 
+/**
+ * @internal
+ */
 export interface IThemingParticipant {
 	(theme: IColorTheme, collector: ICssStyleCollector, environment: IEnvironmentService): void;
 }
@@ -151,17 +208,29 @@ export interface IThemeService {
 
 	readonly onDidColorThemeChange: Event<IColorTheme>;
 
+	/**
+	 * @internal
+	 */
 	getFileIconTheme(): IFileIconTheme;
 
+	/**
+	 * @internal
+	 */
 	readonly onDidFileIconThemeChange: Event<IFileIconTheme>;
 
 }
 
 // static theming participant
+/**
+ * @internal
+ */
 export const Extensions = {
 	ThemingContribution: 'base.contributions.theming'
 };
 
+/**
+ * @internal
+ */
 export interface IThemingRegistry {
 
 	/**
@@ -174,6 +243,9 @@ export interface IThemingRegistry {
 	readonly onThemingParticipantAdded: Event<IThemingParticipant>;
 }
 
+/**
+ * @internal
+ */
 class ThemingRegistry implements IThemingRegistry {
 	private themingParticipants: IThemingParticipant[] = [];
 	private readonly onThemingParticipantAddedEmitter: Emitter<IThemingParticipant>;
@@ -204,12 +276,18 @@ class ThemingRegistry implements IThemingRegistry {
 let themingRegistry = new ThemingRegistry();
 platform.Registry.add(Extensions.ThemingContribution, themingRegistry);
 
+/**
+ * @internal
+ */
 export function registerThemingParticipant(participant: IThemingParticipant): IDisposable {
 	return themingRegistry.onColorThemeChange(participant);
 }
 
 /**
  * Utility base class for all themable components.
+ */
+/**
+ * @internal
  */
 export class Themable extends Disposable {
 	protected theme: IColorTheme;

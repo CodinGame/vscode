@@ -9,6 +9,9 @@ import { CancellationToken, CancellationTokenSource } from 'vs/base/common/cance
 import { Disposable, DisposableStore, toDisposable } from 'vs/base/common/lifecycle';
 import { createDecorator } from 'vs/platform/instantiation/common/instantiation';
 
+/**
+ * @internal
+ */
 export const IProgressService = createDecorator<IProgressService>('progressService');
 
 /**
@@ -24,6 +27,10 @@ export interface IProgressService {
 		onDidCancel?: (choice?: number) => void
 	): Promise<R>;
 }
+
+/**
+ * @internal
+ */
 
 export interface IProgressIndicator {
 
@@ -87,12 +94,18 @@ export interface IProgressStep {
 	total?: number;
 }
 
+/**
+ * @internal
+ */
 export interface IProgressRunner {
 	total(value: number): void;
 	worked(value: number): void;
 	done(): void;
 }
 
+/**
+ * @internal
+ */
 export const emptyProgressRunner: IProgressRunner = Object.freeze({
 	total() { },
 	worked() { },
@@ -103,6 +116,9 @@ export interface IProgress<T> {
 	report(item: T): void;
 }
 
+/**
+ * @internal
+ */
 export class Progress<T> implements IProgress<T> {
 
 	static readonly None: IProgress<unknown> = Object.freeze({ report() { } });
@@ -121,6 +137,7 @@ export class Progress<T> implements IProgress<T> {
 /**
  * A helper to show progress during a long running operation. If the operation
  * is started multiple times, only the last invocation will drive the progress.
+ * @internal
  */
 export interface IOperation {
 	id: number;
@@ -132,6 +149,7 @@ export interface IOperation {
 /**
  * RAII-style progress instance that allows imperative reporting and hides
  * once `dispose()` is called.
+ * @internal
  */
 export class UnmanagedProgress extends Disposable {
 	private readonly deferred = new DeferredPromise<void>();
@@ -164,6 +182,9 @@ export class UnmanagedProgress extends Disposable {
 	}
 }
 
+/**
+ * @internal
+ */
 export class LongRunningOperation extends Disposable {
 	private currentOperationId = 0;
 	private readonly currentOperationDisposables = this._register(new DisposableStore());
@@ -213,10 +234,16 @@ export class LongRunningOperation extends Disposable {
 	}
 }
 
+/**
+ * @internal
+ */
 export const IEditorProgressService = createDecorator<IEditorProgressService>('editorProgressService');
 
 /**
  * A progress service that will report progress local to the editor triggered from.
+ */
+/**
+ * @internal
  */
 export interface IEditorProgressService extends IProgressIndicator {
 

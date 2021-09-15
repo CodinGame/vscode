@@ -221,6 +221,7 @@ export class ColorThemeData implements IWorkbenchColorTheme {
 
 	/**
 	 * @param tokenStyleValue Resolve a tokenStyleValue in the context of a theme
+	 * @internal
 	 */
 	public resolveTokenStyleValue(tokenStyleValue: TokenStyleValue | undefined): TokenStyle | undefined {
 		if (tokenStyleValue === undefined) {
@@ -276,6 +277,9 @@ export class ColorThemeData implements IWorkbenchColorTheme {
 		};
 	}
 
+	/**
+	 * @internal
+	 */
 	public getTokenStylingRuleScope(rule: SemanticTokenRule): 'setting' | 'theme' | undefined {
 		if (this.customSemanticTokenRules.indexOf(rule) !== -1) {
 			return 'setting';
@@ -291,6 +295,9 @@ export class ColorThemeData implements IWorkbenchColorTheme {
 	}
 
 
+	/**
+	 * @internal
+	 */
 	public resolveScopes(scopes: ProbeScope[], definitions?: TextMateThemingRuleDefinitions): TokenStyle | undefined {
 
 		if (!this.themeTokenScopeMatchers) {
@@ -346,12 +353,18 @@ export class ColorThemeData implements IWorkbenchColorTheme {
 		return this.customColorMap.hasOwnProperty(colorId) || this.colorMap.hasOwnProperty(colorId);
 	}
 
+	/**
+	 * @internal
+	 */
 	public setCustomizations(settings: ThemeConfiguration) {
 		this.setCustomColors(settings.colorCustomizations);
 		this.setCustomTokenColors(settings.tokenColorCustomizations);
 		this.setCustomSemanticTokenColors(settings.semanticTokenColorCustomizations);
 	}
 
+	/**
+	 * @internal
+	 */
 	public setCustomColors(colors: IColorCustomizations) {
 		this.customColorMap = {};
 		this.overwriteCustomColors(colors);
@@ -375,6 +388,9 @@ export class ColorThemeData implements IWorkbenchColorTheme {
 		}
 	}
 
+	/**
+	 * @internal
+	 */
 	public setCustomTokenColors(customTokenColors: ITokenColorCustomizations) {
 		this.customTokenColors = [];
 		this.customSemanticHighlightingDeprecated = undefined;
@@ -393,6 +409,9 @@ export class ColorThemeData implements IWorkbenchColorTheme {
 		this.customTokenScopeMatchers = undefined;
 	}
 
+	/**
+	 * @internal
+	 */
 	public setCustomSemanticTokenColors(semanticTokenColors: ISemanticTokenColorCustomizations | undefined) {
 		this.customSemanticTokenRules = [];
 		this.customSemanticHighlighting = undefined;
@@ -417,10 +436,16 @@ export class ColorThemeData implements IWorkbenchColorTheme {
 		this.textMateThemingRules = undefined;
 	}
 
+	/**
+	 * @internal
+	 */
 	public isThemeScope(key: string): boolean {
 		return key.charAt(0) === THEME_SCOPE_OPEN_PAREN && key.charAt(key.length - 1) === THEME_SCOPE_CLOSE_PAREN;
 	}
 
+	/**
+	 * @internal
+	 */
 	public isThemeScopeMatch(themeId: string): boolean {
 		const themeIdFirstChar = themeId.charAt(0);
 		const themeIdLastChar = themeId.charAt(themeId.length - 1);
@@ -433,6 +458,9 @@ export class ColorThemeData implements IWorkbenchColorTheme {
 			|| (this.settingsId.endsWith(themeIdSuffix) && themeIdFirstChar === THEME_SCOPE_WILDCARD);
 	}
 
+	/**
+	 * @internal
+	 */
 	public getThemeSpecificColors(colors: IThemeScopableCustomizations): IThemeScopedCustomizations | undefined {
 		let themeSpecificColors;
 		for (let key in colors) {
@@ -542,6 +570,9 @@ export class ColorThemeData implements IWorkbenchColorTheme {
 		this.customTokenScopeMatchers = undefined;
 	}
 
+	/**
+	 * @internal
+	 */
 	toStorage(storageService: IStorageService) {
 		let colorMapData: { [key: string]: string } = {};
 		for (let key in this.colorMap) {
@@ -581,11 +612,16 @@ export class ColorThemeData implements IWorkbenchColorTheme {
 	}
 
 	// constructors
-
+	/**
+	 * @internal
+	 */
 	static createUnloadedThemeForThemeType(themeType: ColorScheme, colorMap?: { [id: string]: string }): ColorThemeData {
 		return ColorThemeData.createUnloadedTheme(getThemeTypeSelector(themeType), colorMap);
 	}
 
+	/**
+	 * @internal
+	 */
 	static createUnloadedTheme(id: string, colorMap?: { [id: string]: string }): ColorThemeData {
 		let themeData = new ColorThemeData(id, '', '__' + id);
 		themeData.isLoaded = false;
@@ -599,6 +635,9 @@ export class ColorThemeData implements IWorkbenchColorTheme {
 		return themeData;
 	}
 
+	/**
+	 * @internal
+	 */
 	static createLoadedEmptyTheme(id: string, settingsId: string): ColorThemeData {
 		let themeData = new ColorThemeData(id, '', settingsId);
 		themeData.isLoaded = true;
@@ -607,6 +646,9 @@ export class ColorThemeData implements IWorkbenchColorTheme {
 		return themeData;
 	}
 
+	/**
+	 * @internal
+	 */
 	static fromStorageData(storageService: IStorageService): ColorThemeData | undefined {
 		const input = storageService.get(ColorThemeData.STORAGE_KEY, StorageScope.GLOBAL);
 		if (!input) {

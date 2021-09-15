@@ -8,6 +8,9 @@ import { ITokenThemeRule, TokenTheme } from 'vs/editor/common/modes/supports/tok
 import { createDecorator } from 'vs/platform/instantiation/common/instantiation';
 import { IColorTheme, IThemeService } from 'vs/platform/theme/common/themeService';
 
+/**
+ * @internal
+ */
 export const IStandaloneThemeService = createDecorator<IStandaloneThemeService>('themeService');
 
 export type BuiltinTheme = 'vs' | 'vs-dark' | 'hc-black';
@@ -22,6 +25,9 @@ export interface IStandaloneThemeData {
 }
 
 export interface IStandaloneTheme extends IColorTheme {
+	/**
+	 * @internal
+	*/
 	tokenTheme: TokenTheme;
 	themeName: string;
 }

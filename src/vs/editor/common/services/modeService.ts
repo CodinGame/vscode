@@ -8,6 +8,9 @@ import { URI } from 'vs/base/common/uri';
 import { ILanguageIdCodec } from 'vs/editor/common/modes';
 import { createDecorator } from 'vs/platform/instantiation/common/instantiation';
 
+/**
+ * @internal
+ */
 export const IModeService = createDecorator<IModeService>('modeService');
 
 export interface ILanguageExtensionPoint {

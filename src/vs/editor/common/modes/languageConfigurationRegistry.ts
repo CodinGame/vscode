@@ -199,6 +199,9 @@ export class LanguageConfigurationRegistryImpl {
 		});
 	}
 
+	/**
+	 * @internal
+	 */
 	public getLanguageConfiguration(languageId: string): ResolvedLanguageConfiguration | null {
 		let entries = this._entries.get(languageId);
 		return entries?.getResolvedConfiguration() || null;
@@ -229,6 +232,7 @@ export class LanguageConfigurationRegistryImpl {
 
 	/**
 	 * Should return opening bracket type to match indentation with
+	 * @internal
 	 */
 	public onElectricCharacter(character: string, context: LineTokens, column: number): IElectricAction | null {
 		let scopedLineTokens = createScopedLineTokens(context, column - 1);
@@ -240,7 +244,9 @@ export class LanguageConfigurationRegistryImpl {
 	}
 
 	// end electricCharacter
-
+	/**
+	 * @internal
+	 */
 	public getComments(languageId: string): ICommentsConfiguration | null {
 		let value = this.getLanguageConfiguration(languageId);
 		if (!value) {
@@ -250,7 +256,9 @@ export class LanguageConfigurationRegistryImpl {
 	}
 
 	// begin characterPair
-
+	/**
+	 * @internal
+	 */
 	private _getCharacterPairSupport(languageId: string): CharacterPairSupport | null {
 		let value = this.getLanguageConfiguration(languageId);
 		if (!value) {
@@ -259,11 +267,17 @@ export class LanguageConfigurationRegistryImpl {
 		return value.characterPair || null;
 	}
 
+	/**
+	* @internal
+	*/
 	public getAutoClosingPairs(languageId: string): AutoClosingPairs {
 		const characterPairSupport = this._getCharacterPairSupport(languageId);
 		return new AutoClosingPairs(characterPairSupport ? characterPairSupport.getAutoClosingPairs() : []);
 	}
 
+	/**
+	 * @internal
+	 */
 	public getAutoCloseBeforeSet(languageId: string): string {
 		let characterPairSupport = this._getCharacterPairSupport(languageId);
 		if (!characterPairSupport) {
@@ -272,6 +286,9 @@ export class LanguageConfigurationRegistryImpl {
 		return characterPairSupport.getAutoCloseBeforeSet();
 	}
 
+	/**
+	 * @internal
+	 */
 	public getSurroundingPairs(languageId: string): IAutoClosingPair[] {
 		let characterPairSupport = this._getCharacterPairSupport(languageId);
 		if (!characterPairSupport) {
@@ -280,13 +297,18 @@ export class LanguageConfigurationRegistryImpl {
 		return characterPairSupport.getSurroundingPairs();
 	}
 
+	/**
+	 * @internal
+	 */
 	public shouldAutoClosePair(autoClosingPair: StandardAutoClosingPairConditional, context: LineTokens, column: number): boolean {
 		const scopedLineTokens = createScopedLineTokens(context, column - 1);
 		return CharacterPairSupport.shouldAutoClosePair(autoClosingPair, scopedLineTokens, column - scopedLineTokens.firstCharOffset);
 	}
 
 	// end characterPair
-
+	/**
+	 * @internal
+	 */
 	public getWordDefinition(languageId: string): RegExp {
 		let value = this.getLanguageConfiguration(languageId);
 		if (!value) {
@@ -295,6 +317,9 @@ export class LanguageConfigurationRegistryImpl {
 		return ensureValidWordDefinition(value.wordDefinition || null);
 	}
 
+	/**
+	 * @internal
+	 */
 	public getWordDefinitions(): [string, RegExp][] {
 		let result: [string, RegExp][] = [];
 		for (const [language, entries] of this._entries) {
@@ -316,6 +341,9 @@ export class LanguageConfigurationRegistryImpl {
 
 	// begin Indent Rules
 
+	/**
+	 * @internal
+	 */
 	public getIndentRulesSupport(languageId: string): IndentRulesSupport | null {
 		let value = this.getLanguageConfiguration(languageId);
 		if (!value) {
@@ -365,6 +393,9 @@ export class LanguageConfigurationRegistryImpl {
 	 * 4. Otherwise, we fail to get an inherited indent from aboves. Return null and we should not touch the indent of `lineNumber`
 	 *
 	 * This function only return the inherited indent based on above lines, it doesn't check whether current line should decrease or not.
+	 */
+	/**
+	 * @internal
 	 */
 	public getInheritIndentForLine(autoIndent: EditorAutoIndentStrategy, model: IVirtualModel, lineNumber: number, honorIntentialIndent: boolean = true): { indentation: string; action: IndentAction | null; line?: number; } | null {
 		if (autoIndent < EditorAutoIndentStrategy.Full) {
@@ -490,6 +521,9 @@ export class LanguageConfigurationRegistryImpl {
 		}
 	}
 
+	/**
+	 * @internal
+	 */
 	public getGoodIndentForLine(autoIndent: EditorAutoIndentStrategy, virtualModel: IVirtualModel, languageId: string, lineNumber: number, indentConverter: IIndentConverter): string | null {
 		if (autoIndent < EditorAutoIndentStrategy.Full) {
 			return null;
@@ -558,6 +592,9 @@ export class LanguageConfigurationRegistryImpl {
 		return null;
 	}
 
+	/**
+	 * @internal
+	 */
 	public getIndentForEnter(autoIndent: EditorAutoIndentStrategy, model: ITextModel, range: Range, indentConverter: IIndentConverter): { beforeEnter: string, afterEnter: string } | null {
 		if (autoIndent < EditorAutoIndentStrategy.Full) {
 			return null;
@@ -642,6 +679,9 @@ export class LanguageConfigurationRegistryImpl {
 	 * We should always allow intentional indentation. It means, if users change the indentation of `lineNumber` and the content of
 	 * this line doesn't match decreaseIndentPattern, we should not adjust the indentation.
 	 */
+	/**
+	 * @internal
+	 */
 	public getIndentActionForType(autoIndent: EditorAutoIndentStrategy, model: ITextModel, range: Range, ch: string, indentConverter: IIndentConverter): string | null {
 		if (autoIndent < EditorAutoIndentStrategy.Full) {
 			return null;
@@ -691,6 +731,9 @@ export class LanguageConfigurationRegistryImpl {
 		return null;
 	}
 
+	/**
+	 * @internal
+	 */
 	public getIndentMetadata(model: ITextModel, lineNumber: number): number | null {
 		const indentRulesSupport = this.getIndentRulesSupport(model.getLanguageId());
 		if (!indentRulesSupport) {
@@ -706,6 +749,9 @@ export class LanguageConfigurationRegistryImpl {
 
 	// begin onEnter
 
+	/**
+	 * @internal
+	 */
 	public getEnterAction(autoIndent: EditorAutoIndentStrategy, model: ITextModel, range: Range): CompleteEnterAction | null {
 		const scopedLineTokens = this.getScopedLineTokens(model, range.startLineNumber, range.startColumn);
 		const richEditSupport = this.getLanguageConfiguration(scopedLineTokens.languageId);
@@ -771,6 +817,9 @@ export class LanguageConfigurationRegistryImpl {
 		};
 	}
 
+	/**
+	 * @internal
+	 */
 	public getIndentationAtPosition(model: ITextModel, lineNumber: number, column: number): string {
 		const lineText = model.getLineContent(lineNumber);
 		let indentation = strings.getLeadingWhitespace(lineText);
@@ -780,6 +829,9 @@ export class LanguageConfigurationRegistryImpl {
 		return indentation;
 	}
 
+	/**
+	 * @internal
+	 */
 	private getScopedLineTokens(model: ITextModel, lineNumber: number, columnNumber?: number): ScopedLineTokens {
 		model.forceTokenization(lineNumber);
 		const lineTokens = model.getLineTokens(lineNumber);
@@ -789,6 +841,9 @@ export class LanguageConfigurationRegistryImpl {
 
 	// end onEnter
 
+	/**
+	 * @internal
+	 */
 	public getBracketsSupport(languageId: string): RichEditBrackets | null {
 		const value = this.getLanguageConfiguration(languageId);
 		if (!value) {

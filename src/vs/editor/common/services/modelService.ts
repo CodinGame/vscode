@@ -11,6 +11,9 @@ import { createDecorator } from 'vs/platform/instantiation/common/instantiation'
 import { DocumentSemanticTokensProvider, DocumentRangeSemanticTokensProvider } from 'vs/editor/common/modes';
 import { SemanticTokensProviderStyling } from 'vs/editor/common/services/semanticTokensProviderStyling';
 
+/**
+ * @internal
+ */
 export const IModelService = createDecorator<IModelService>('modelService');
 
 export type DocumentTokensProvider = DocumentSemanticTokensProvider | DocumentRangeSemanticTokensProvider;
@@ -18,8 +21,14 @@ export type DocumentTokensProvider = DocumentSemanticTokensProvider | DocumentRa
 export interface IModelService {
 	readonly _serviceBrand: undefined;
 
+	/**
+	 * @internal
+	 */
 	createModel(value: string | ITextBufferFactory, languageSelection: ILanguageSelection | null, resource?: URI, isForSimpleWidget?: boolean): ITextModel;
 
+	/**
+	 * @internal
+	 */
 	updateModel(model: ITextModel, value: string | ITextBufferFactory): void;
 
 	setMode(model: ITextModel, languageSelection: ILanguageSelection): void;
@@ -32,6 +41,9 @@ export interface IModelService {
 
 	getModel(resource: URI): ITextModel | null;
 
+	/**
+	 * @internal
+	 */
 	getSemanticTokensProviderStyling(provider: DocumentTokensProvider): SemanticTokensProviderStyling;
 
 	onModelAdded: Event<ITextModel>;
@@ -41,6 +53,9 @@ export interface IModelService {
 	onModelModeChanged: Event<{ model: ITextModel; oldModeId: string; }>;
 }
 
+/**
+ * @internal
+ */
 export function shouldSynchronizeModel(model: ITextModel): boolean {
 	return (
 		!model.isTooLargeForSyncing() && !model.isForSimpleWidget

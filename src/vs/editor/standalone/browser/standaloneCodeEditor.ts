@@ -260,6 +260,9 @@ export class StandaloneCodeEditor extends CodeEditorWidget implements IStandalon
 
 	private readonly _standaloneKeybindingService: StandaloneKeybindingService | null;
 
+	/**
+	 * @internal
+	 */
 	constructor(
 		domElement: HTMLElement,
 		_options: Readonly<IStandaloneEditorConstructionOptions>,
@@ -491,6 +494,9 @@ export class StandaloneDiffEditor extends DiffEditorWidget implements IStandalon
 	private readonly _configurationService: IConfigurationService;
 	private readonly _standaloneThemeService: IStandaloneThemeService;
 
+	/**
+	 * @internal
+	 */
 	constructor(
 		domElement: HTMLElement,
 		_options: Readonly<IStandaloneDiffEditorConstructionOptions> | undefined,
