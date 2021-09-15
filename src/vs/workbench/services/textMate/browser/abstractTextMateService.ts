@@ -23,7 +23,6 @@ import { ExtensionMessageCollector } from 'vs/workbench/services/extensions/comm
 import { ITMSyntaxExtensionPoint, grammarsExtPoint } from 'vs/workbench/services/textMate/common/TMGrammars';
 import { ITextMateService } from 'vs/workbench/services/textMate/common/textMateService';
 import { ITextMateThemingRule, IWorkbenchThemeService, IWorkbenchColorTheme } from 'vs/workbench/services/themes/common/workbenchThemeService';
-import type { IGrammar, StackElement, IOnigLib, IRawTheme } from 'vscode-textmate';
 import { Disposable, IDisposable, dispose } from 'vs/base/common/lifecycle';
 import { IConfigurationService } from 'vs/platform/configuration/common/configuration';
 import { IValidGrammarDefinition, IValidEmbeddedLanguagesMap, IValidTokenTypeMap } from 'vs/workbench/services/textMate/common/TMScopeRegistry';
@@ -47,7 +46,7 @@ export abstract class AbstractTextMateService extends Disposable implements ITex
 	private _grammarDefinitions: IValidGrammarDefinition[] | null;
 	private _grammarFactory: TMGrammarFactory | null;
 	private _tokenizersRegistrations: IDisposable[];
-	protected _currentTheme: IRawTheme | null;
+	protected _currentTheme: import('vscode-textmate').IRawTheme | null;
 	protected _currentTokenColorMap: string[] | null;
 
 	constructor(
@@ -233,7 +232,7 @@ export abstract class AbstractTextMateService extends Disposable implements ITex
 		}
 
 		const [vscodeTextmate, vscodeOniguruma] = await Promise.all([import('vscode-textmate'), this._getVSCodeOniguruma()]);
-		const onigLib: Promise<IOnigLib> = Promise.resolve({
+		const onigLib: Promise<import('vscode-textmate').IOnigLib> = Promise.resolve({
 			createOnigScanner: (sources: string[]) => vscodeOniguruma.createOnigScanner(sources),
 			createOnigString: (str: string) => vscodeOniguruma.createOnigString(str)
 		});
@@ -308,7 +307,7 @@ export abstract class AbstractTextMateService extends Disposable implements ITex
 		this._doUpdateTheme(grammarFactory, this._currentTheme, this._currentTokenColorMap);
 	}
 
-	protected _doUpdateTheme(grammarFactory: TMGrammarFactory, theme: IRawTheme, tokenColorMap: string[]): void {
+	protected _doUpdateTheme(grammarFactory: TMGrammarFactory, theme: import('vscode-textmate').IRawTheme, tokenColorMap: string[]): void {
 		grammarFactory.setTheme(theme, tokenColorMap);
 		let colorMap = AbstractTextMateService._toColorMap(tokenColorMap);
 		let cssRules = generateTokensCSSForColorMap(colorMap);
@@ -373,7 +372,7 @@ export abstract class AbstractTextMateService extends Disposable implements ITex
 		return true;
 	}
 
-	public async createGrammar(languageId: string): Promise<IGrammar | null> {
+	public async createGrammar(languageId: string): Promise<import('vscode-textmate').IGrammar | null> {
 		if (!this._modeService.validateLanguageId(languageId)) {
 			return null;
 		}
@@ -450,7 +449,7 @@ class TMTokenizationSupport implements ITokenizationSupport {
 		throw new Error('Not supported!');
 	}
 
-	tokenize2(line: string, hasEOL: boolean, state: StackElement, offsetDelta: number): TokenizationResult2 {
+	tokenize2(line: string, hasEOL: boolean, state: import('vscode-textmate').StackElement, offsetDelta: number): TokenizationResult2 {
 		if (offsetDelta !== 0) {
 			throw new Error('Unexpected: offsetDelta should be 0.');
 		}
@@ -466,15 +465,15 @@ class TMTokenizationSupport implements ITokenizationSupport {
 
 class TMTokenization extends Disposable {
 
-	private readonly _grammar: IGrammar;
+	private readonly _grammar: import('vscode-textmate').IGrammar;
 	private readonly _containsEmbeddedLanguages: boolean;
 	private readonly _seenLanguages: boolean[];
-	private readonly _initialState: StackElement;
+	private readonly _initialState: import('vscode-textmate').StackElement;
 
 	private readonly _onDidEncounterLanguage: Emitter<LanguageId> = this._register(new Emitter<LanguageId>());
 	public readonly onDidEncounterLanguage: Event<LanguageId> = this._onDidEncounterLanguage.event;
 
-	constructor(grammar: IGrammar, initialState: StackElement, containsEmbeddedLanguages: boolean) {
+	constructor(grammar: import('vscode-textmate').IGrammar, initialState: import('vscode-textmate').StackElement, containsEmbeddedLanguages: boolean) {
 		super();
 		this._grammar = grammar;
 		this._initialState = initialState;
@@ -486,7 +485,7 @@ class TMTokenization extends Disposable {
 		return this._initialState;
 	}
 
-	public tokenize2(line: string, state: StackElement): TokenizationResult2 {
+	public tokenize2(line: string, state: import('vscode-textmate').StackElement): TokenizationResult2 {
 		const textMateResult = this._grammar.tokenizeLine2(line, state, 500);
 
 		if (textMateResult.stoppedEarly) {
@@ -511,7 +510,7 @@ class TMTokenization extends Disposable {
 			}
 		}
 
-		let endState: StackElement;
+		let endState: import('vscode-textmate').StackElement;
 		// try to save an object if possible
 		if (state.equals(textMateResult.ruleStack)) {
 			endState = state;

@@ -5,7 +5,6 @@
 
 import * as nls from 'vs/nls';
 import { URI } from 'vs/base/common/uri';
-import type { IGrammar, Registry, StackElement, IRawTheme, IOnigLib } from 'vscode-textmate';
 import { Disposable } from 'vs/base/common/lifecycle';
 import { TMScopeRegistry, IValidGrammarDefinition, IValidEmbeddedLanguagesMap } from 'vs/workbench/services/textMate/common/TMScopeRegistry';
 
@@ -17,22 +16,22 @@ interface ITMGrammarFactoryHost {
 
 export interface ICreateGrammarResult {
 	languageId: string;
-	grammar: IGrammar | null;
-	initialState: StackElement;
+	grammar: import('vscode-textmate').IGrammar | null;
+	initialState: import('vscode-textmate').StackElement;
 	containsEmbeddedLanguages: boolean;
 }
 
 export class TMGrammarFactory extends Disposable {
 
 	private readonly _host: ITMGrammarFactoryHost;
-	private readonly _initialState: StackElement;
+	private readonly _initialState: import('vscode-textmate').StackElement;
 	private readonly _scopeRegistry: TMScopeRegistry;
 	private readonly _injections: { [scopeName: string]: string[]; };
 	private readonly _injectedEmbeddedLanguages: { [scopeName: string]: IValidEmbeddedLanguagesMap[]; };
 	private readonly _languageToScope: Map<string, string>;
-	private readonly _grammarRegistry: Registry;
+	private readonly _grammarRegistry: import('vscode-textmate').Registry;
 
-	constructor(host: ITMGrammarFactoryHost, grammarDefinitions: IValidGrammarDefinition[], vscodeTextmate: typeof import('vscode-textmate'), onigLib: Promise<IOnigLib>) {
+	constructor(host: ITMGrammarFactoryHost, grammarDefinitions: IValidGrammarDefinition[], vscodeTextmate: typeof import('vscode-textmate'), onigLib: Promise<import('vscode-textmate').IOnigLib>) {
 		super();
 		this._host = host;
 		this._initialState = vscodeTextmate.INITIAL;
@@ -101,7 +100,7 @@ export class TMGrammarFactory extends Disposable {
 		return this._languageToScope.has(languageId);
 	}
 
-	public setTheme(theme: IRawTheme, colorMap: string[]): void {
+	public setTheme(theme: import('vscode-textmate').IRawTheme, colorMap: string[]): void {
 		this._grammarRegistry.setTheme(theme, colorMap);
 	}
 
