@@ -133,7 +133,7 @@ const compileEditorESMTask = task.define('compile-editor-esm', () => {
 			cwd: path.join(__dirname, '../out-editor-esm')
 		});
 	} else {
-		result = cp.spawnSync(`node`, [`../node_modules/.bin/tsc`], {
+		result = cp.spawnSync(`node`, [`../node_modules/.bin/tsc`, '--module', 'esnext'], {
 			cwd: path.join(__dirname, '../out-editor-esm')
 		});
 	}
