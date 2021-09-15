@@ -23,12 +23,15 @@ import { IModelService } from 'vs/editor/common/services/model';
 import { createWebWorker as actualCreateWebWorker, IWebWorkerOptions, MonacoWebWorker } from 'vs/editor/browser/services/webWorker';
 import * as standaloneEnums from 'vs/editor/common/standalone/standaloneEnums';
 import { Colorizer, IColorizerElementOptions, IColorizerOptions } from 'vs/editor/standalone/browser/colorizer';
-import { createTextModel, IStandaloneCodeEditor, IStandaloneDiffEditor, IStandaloneDiffEditorConstructionOptions, IStandaloneEditorConstructionOptions, StandaloneDiffEditor, StandaloneEditor } from 'vs/editor/standalone/browser/standaloneCodeEditor';
+import { createTextModel, IStandaloneCodeEditor, IStandaloneDiffEditor, IStandaloneDiffEditorConstructionOptions, IStandaloneEditorConstructionOptions, StandaloneCodeEditor, StandaloneDiffEditor, StandaloneEditor } from 'vs/editor/standalone/browser/standaloneCodeEditor';
 import { IEditorOverrideServices, StandaloneServices } from 'vs/editor/standalone/browser/standaloneServices';
 import { StandaloneThemeService } from 'vs/editor/standalone/browser/standaloneThemeService';
 import { IStandaloneThemeData, IStandaloneThemeService } from 'vs/editor/standalone/common/standaloneTheme';
 import { CommandsRegistry } from 'vs/platform/commands/common/commands';
 import { IMarker, IMarkerData, IMarkerService } from 'vs/platform/markers/common/markers';
+import { DiffEditorWidget } from 'vs/editor/browser/widget/diffEditorWidget';
+import { Color, HSLA, HSVA, RGBA } from 'vs/base/common/color';
+import { CodeEditorWidget } from 'vs/editor/browser/widget/codeEditorWidget';
 
 /**
  * Create a new editor under `domElement`.
@@ -340,10 +343,21 @@ export function createMonacoEditorAPI(): typeof monaco.editor {
 		TextModelResolvedOptions: <any>TextModelResolvedOptions,
 		FindMatch: <any>FindMatch,
 		ApplyUpdateResult: <any>ApplyUpdateResult,
+		RGBA,
+		HSLA,
+		HSVA,
+		Color,
+		CodeEditorWidget: <any>CodeEditorWidget,
+		StandaloneCodeEditor: <any>StandaloneCodeEditor,
+		DiffEditorWidget: <any>DiffEditorWidget,
+		StandaloneDiffEditor: <any>StandaloneDiffEditor,
+		ColorScheme: standaloneEnums.ColorScheme,
 
 		// vars
 		EditorType: EditorType,
-		EditorOptions: <any>EditorOptions
+		EditorOptions: <any>EditorOptions,
 
+		// services
+		IStandaloneThemeService: IStandaloneThemeService
 	};
 }
