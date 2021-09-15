@@ -493,9 +493,6 @@ export class TextModelResolvedOptions {
 	}
 }
 
-/**
- * @internal
- */
 export interface ITextModelCreationOptions {
 	tabSize: number;
 	indentSize: number;
@@ -559,8 +556,6 @@ export interface IActiveIndentGuideInfo {
  * Text snapshot that works like an iterator.
  * Will try to return chunks of roughly ~64KB size.
  * Will return null when finished.
- *
- * @internal
  */
 export interface ITextSnapshot {
 	read(): string | null;

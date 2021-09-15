@@ -587,9 +587,6 @@ export function isThemeColor(o: any): o is ThemeColor {
 	return o && typeof o.id === 'string';
 }
 
-/**
- * @internal
- */
 export interface IThemeDecorationRenderOptions {
 	backgroundColor?: string | ThemeColor;
 
@@ -638,9 +635,6 @@ export interface IThemeDecorationRenderOptions {
 	afterInjectedText?: IContentDecorationRenderOptions & { affectsLetterSpacing?: boolean };
 }
 
-/**
- * @internal
- */
 export interface IContentDecorationRenderOptions {
 	contentText?: string;
 	contentIconPath?: UriComponents;
@@ -664,9 +658,6 @@ export interface IContentDecorationRenderOptions {
 	height?: string;
 }
 
-/**
- * @internal
- */
 export interface IDecorationRenderOptions extends IThemeDecorationRenderOptions {
 	isWholeLine?: boolean;
 	rangeBehavior?: TrackedRangeStickiness;
@@ -754,9 +745,6 @@ export interface CompositionTypePayload {
 	positionDelta: number;
 }
 
-/**
- * @internal
- */
 export interface PastePayload {
 	text: string;
 	pasteOnNewLine: boolean;
