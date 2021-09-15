@@ -174,6 +174,9 @@ function getMassagedTopLevelDeclarationText(ts: typeof import('typescript'), sou
 					if (isStatic(ts, member)) {
 						usage.push(`a = ${staticTypeName}${memberAccess};`);
 					} else {
+						if (hasModifier(member.modifiers, ts.SyntaxKind.ProtectedKeyword)) {
+							usage.push(`// @ts-ignore`);
+						}
 						usage.push(`a = (<${instanceTypeName}>b)${memberAccess};`);
 					}
 				}
