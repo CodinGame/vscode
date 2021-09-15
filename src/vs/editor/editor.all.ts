@@ -56,3 +56,5 @@ import 'vs/editor/contrib/wordPartOperations/wordPartOperations';
 import 'vs/editor/common/standaloneStrings';
 
 import 'vs/base/browser/ui/codicons/codiconStyles'; // The codicons are defined here and must be loaded
+
+import 'vs/workbench/services/textMate/common/TMGrammars';
