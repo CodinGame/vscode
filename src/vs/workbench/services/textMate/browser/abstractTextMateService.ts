@@ -163,6 +163,9 @@ export abstract class AbstractTextMateService extends Disposable implements ITex
 		});
 	}
 
+	/**
+	 * @internal
+	 */
 	public startDebugMode(printFn: (str: string) => void, onStop: () => void): void {
 		if (this._debugMode) {
 			this._notificationService.error(nls.localize('alreadyDebugging', "Already Logging."));

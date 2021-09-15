@@ -48,6 +48,9 @@ export abstract class AbstractKeybindingService extends Disposable implements IK
 		return !!this._currentChord;
 	}
 
+	/**
+	 * @internal
+	 */
 	constructor(
 		private _contextKeyService: IContextKeyService,
 		protected _commandService: ICommandService,

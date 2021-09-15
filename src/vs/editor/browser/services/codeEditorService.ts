@@ -47,6 +47,9 @@ export interface ICodeEditorService {
 	setModelProperty(resource: URI, key: string, value: any): void;
 	getModelProperty(resource: URI, key: string): any;
 
+	/**
+	 * @internal
+	 */
 	setTransientModelProperty(model: ITextModel, key: string, value: any): void;
 	getTransientModelProperty(model: ITextModel, key: string): any;
 	getTransientModelProperties(model: ITextModel): [string, any][] | undefined;

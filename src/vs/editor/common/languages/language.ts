@@ -87,6 +87,7 @@ export interface ILanguageService {
 
 	/**
 	 * Get the default icon for the language.
+	 * @internal
 	 */
 	getIcon(languageId: string): ILanguageIcon | null;
 

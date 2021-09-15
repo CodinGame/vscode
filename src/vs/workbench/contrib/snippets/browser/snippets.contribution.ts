@@ -10,6 +10,9 @@ import * as nls from 'vs/nls';
 import { createDecorator } from 'vs/platform/instantiation/common/instantiation';
 import { SnippetFile, Snippet } from 'vs/workbench/contrib/snippets/browser/snippetsFile';
 
+/**
+ * @internal
+ */
 export const ISnippetsService = createDecorator<ISnippetsService>('snippetService');
 
 export interface ISnippetGetOptions {
@@ -21,6 +24,9 @@ export interface ISnippetsService {
 
 	readonly _serviceBrand: undefined;
 
+	/**
+	 * @internal
+	 */
 	getSnippetFiles(): Promise<Iterable<SnippetFile>>;
 
 	isEnabled(snippet: Snippet): boolean;

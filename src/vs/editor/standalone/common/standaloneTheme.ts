@@ -22,6 +22,9 @@ export interface IStandaloneThemeData {
 }
 
 export interface IStandaloneTheme extends IColorTheme {
+	/**
+	 * @internal
+	*/
 	tokenTheme: TokenTheme;
 	themeName: string;
 }

@@ -312,6 +312,9 @@ export class StandaloneKeybindingService extends AbstractKeybindingService {
 	private readonly _dynamicKeybindings: IKeybindingItem[];
 	private readonly _domNodeListeners: DomNodeListeners[];
 
+	/**
+	 * @internal
+	 */
 	constructor(
 		@IContextKeyService contextKeyService: IContextKeyService,
 		@ICommandService commandService: ICommandService,
@@ -503,6 +506,9 @@ class DomNodeListeners extends Disposable {
 	}
 }
 
+/**
+ * @internal
+ */
 function isConfigurationOverrides(thing: any): thing is IConfigurationOverrides {
 	return thing
 		&& typeof thing === 'object'

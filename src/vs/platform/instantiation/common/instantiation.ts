@@ -7,14 +7,28 @@ import * as descriptors from './descriptors';
 import { ServiceCollection } from './serviceCollection';
 
 // ------ internal util
-
+/**
+ * @internal
+ */
 export namespace _util {
 
+	/**
+	 * @internal
+	 */
 	export const serviceIds = new Map<string, ServiceIdentifier<any>>();
 
+	/**
+	 * @internal
+	 */
 	export const DI_TARGET = '$di$target';
+	/**
+	 * @internal
+	 */
 	export const DI_DEPENDENCIES = '$di$dependencies';
 
+	/**
+	 * @internal
+	 */
 	export function getServiceDependencies(ctor: any): { id: ServiceIdentifier<any>; index: number }[] {
 		return ctor[DI_DEPENDENCIES] || [];
 	}
@@ -32,6 +46,9 @@ export interface ServicesAccessor {
 	get<T>(id: ServiceIdentifier<T>): T;
 }
 
+/**
+ * @internal
+ */
 export const IInstantiationService = createDecorator<IInstantiationService>('instantiationService');
 
 /**
@@ -86,6 +103,7 @@ function storeServiceDependency(id: Function, target: Function, index: number): 
 
 /**
  * The *only* valid way to create a {{ServiceIdentifier}}.
+ * @internal
  */
 export function createDecorator<T>(serviceId: string): ServiceIdentifier<T> {
 
@@ -106,6 +124,9 @@ export function createDecorator<T>(serviceId: string): ServiceIdentifier<T> {
 	return id;
 }
 
+/**
+ * @internal
+ */
 export function refineServiceDecorator<T1, T extends T1>(serviceIdentifier: ServiceIdentifier<T1>): ServiceIdentifier<T> {
 	return <ServiceIdentifier<T>>serviceIdentifier;
 }
