@@ -888,7 +888,6 @@ export interface ICodeEditor extends editorCommon.IEditor {
 
 	/**
 	 * Set the model ranges that will be hidden in the view.
-	 * @internal
 	 */
 	setHiddenAreas(ranges: IRange[]): void;
 
