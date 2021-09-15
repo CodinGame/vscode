@@ -10,8 +10,8 @@ import { Position } from 'vs/editor/common/core/position';
 import { Range } from 'vs/editor/common/core/range';
 import * as model from 'vs/editor/common/model';
 import * as languages from 'vs/editor/common/languages';
-import { LanguageConfiguration } from 'vs/editor/common/languages/languageConfiguration';
-import { LanguageConfigurationRegistry } from 'vs/editor/common/languages/languageConfigurationRegistry';
+import { AutoClosingPairs, LanguageConfiguration, StandardAutoClosingPairConditional } from 'vs/editor/common/languages/languageConfiguration';
+import { ILanguageConfigurationService, LanguageConfigurationChangeEvent, LanguageConfigurationRegistry, LanguageConfigurationRegistryImpl, LanguageConfigurationService, LanguageConfigurationServiceChangeEvent, ResolvedLanguageConfiguration } from 'vs/editor/common/languages/languageConfigurationRegistry';
 import { ModesRegistry } from 'vs/editor/common/languages/modesRegistry';
 import { ILanguageExtensionPoint, ILanguageService } from 'vs/editor/common/languages/language';
 import * as standaloneEnums from 'vs/editor/common/standalone/standaloneEnums';
@@ -23,6 +23,13 @@ import { IStandaloneThemeService } from 'vs/editor/standalone/common/standaloneT
 import { IMarkerData, IMarkerService } from 'vs/platform/markers/common/markers';
 import { ILanguageFeaturesService } from 'vs/editor/common/services/languageFeatures';
 import { LanguageSelector } from 'vs/editor/common/languageSelector';
+import { LanguageService } from 'vs/editor/common/services/languageService';
+import { CharacterPairSupport } from 'vs/editor/common/languages/supports/characterPair';
+import { IndentRulesSupport } from 'vs/editor/common/languages/supports/indentRules';
+import { RichEditBracket, RichEditBrackets } from 'vs/editor/common/languages/supports/richEditBrackets';
+import { ScopedLineTokens } from 'vs/editor/common/languages/supports';
+import { LineTokens } from 'vs/editor/common/tokens/lineTokens';
+import { BracketElectricCharacterSupport } from 'vs/editor/common/languages/supports/electricCharacter';
 
 /**
  * Register information about a new language.
@@ -395,6 +402,21 @@ export function setTokensProvider(languageId: string, provider: TokensProvider |
 }
 
 /**
+ * Set the tokenization support for a language (manual implementation).
+ */
+export function setTokenizationSupport(languageId: string, support: languages.ITokenizationSupport) {
+	return languages.TokenizationRegistry.register(languageId, support);
+}
+
+/**
+ * Set the tokenization support factory for a language (manual implementation).
+ */
+export function setTokenizationSupportFactory(languageId: string, factory: languages.ITokenizationSupportFactory) {
+	return languages.TokenizationRegistry.registerFactory(languageId, factory);
+}
+
+
+/**
  * Set the tokens provider for a language (monarch implementation). This tokenizer will be exclusive
  * with a tokenizer set using `setTokensProvider`, or with `registerTokensProviderFactory`, but will
  * work together with a tokens provider set using `registerDocumentSemanticTokensProvider` or
@@ -736,6 +758,8 @@ export function createMonacoLanguagesAPI(): typeof monaco.languages {
 		registerDocumentRangeSemanticTokensProvider: <any>registerDocumentRangeSemanticTokensProvider,
 		registerInlineCompletionsProvider: <any>registerInlineCompletionsProvider,
 		registerInlayHintsProvider: <any>registerInlayHintsProvider,
+		LanguageConfigurationRegistryImpl: <any>LanguageConfigurationRegistryImpl,
+		LanguageConfigurationChangeEvent: <any>LanguageConfigurationChangeEvent,
 
 		// enums
 		DocumentHighlightKind: standaloneEnums.DocumentHighlightKind,
@@ -749,8 +773,31 @@ export function createMonacoLanguagesAPI(): typeof monaco.languages {
 		SignatureHelpTriggerKind: standaloneEnums.SignatureHelpTriggerKind,
 		InlayHintKind: standaloneEnums.InlayHintKind,
 		InlineCompletionTriggerKind: standaloneEnums.InlineCompletionTriggerKind,
+		LanguageId: standaloneEnums.LanguageId,
+		ColorId: standaloneEnums.ColorId,
+		StandardTokenType: standaloneEnums.StandardTokenType,
 
 		// classes
 		FoldingRangeKind: languages.FoldingRangeKind,
+		StandardAutoClosingPairConditional: <any>StandardAutoClosingPairConditional,
+		AutoClosingPairs: <any>AutoClosingPairs,
+		TokenizationResult: languages.TokenizationResult,
+		EncodedTokenizationResult: languages.EncodedTokenizationResult,
+		LanguageService: <any>LanguageService,
+		LanguageConfigurationServiceChangeEvent: LanguageConfigurationServiceChangeEvent,
+		ResolvedLanguageConfiguration: <any>ResolvedLanguageConfiguration,
+		CharacterPairSupport: <any>CharacterPairSupport,
+		IndentRulesSupport: IndentRulesSupport,
+		RichEditBrackets: RichEditBrackets,
+		RichEditBracket: RichEditBracket,
+		BracketElectricCharacterSupport: <any>BracketElectricCharacterSupport,
+		ScopedLineTokens: <any>ScopedLineTokens,
+		LineTokens: <any>LineTokens,
+		LanguageConfigurationService: <any>LanguageConfigurationService,
+		LanguageConfigurationRegistry: LanguageConfigurationRegistry,
+
+		// services
+		ILanguageService: <any>ILanguageService,
+		ILanguageConfigurationService: <any>ILanguageConfigurationService
 	};
 }
