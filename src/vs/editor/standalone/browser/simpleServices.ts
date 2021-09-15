@@ -302,6 +302,9 @@ export class StandaloneKeybindingService extends AbstractKeybindingService {
 	private _cachedResolver: KeybindingResolver | null;
 	private readonly _dynamicKeybindings: IKeybindingItem[];
 
+	/**
+	 * @internal
+	 */
 	constructor(
 		contextKeyService: IContextKeyService,
 		commandService: ICommandService,
@@ -440,6 +443,9 @@ export class StandaloneKeybindingService extends AbstractKeybindingService {
 	}
 }
 
+/**
+ * @internal
+ */
 function isConfigurationOverrides(thing: any): thing is IConfigurationOverrides {
 	return thing
 		&& typeof thing === 'object'

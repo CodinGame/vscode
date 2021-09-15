@@ -12,18 +12,39 @@ import { Extensions as JSONExtensions, IJSONContributionRegistry } from 'vs/plat
 import * as platform from 'vs/platform/registry/common/platform';
 import { IColorTheme } from 'vs/platform/theme/common/themeService';
 
+/**
+ * @internal
+ */
 export const TOKEN_TYPE_WILDCARD = '*';
+/**
+ * @internal
+ */
 export const TOKEN_CLASSIFIER_LANGUAGE_SEPARATOR = ':';
+/**
+ * @internal
+ */
 export const CLASSIFIER_MODIFIER_SEPARATOR = '.';
 
 // qualified string [type|*](.modifier)*(/language)!
 export type TokenClassificationString = string;
 
+/**
+ * @internal
+ */
 export const idPattern = '\\w+[-_\\w+]*';
+/**
+ * @internal
+ */
 export const typeAndModifierIdPattern = `^${idPattern}$`;
 
+/**
+ * @internal
+ */
 export const selectorPattern = `^(${idPattern}|\\*)(\\${CLASSIFIER_MODIFIER_SEPARATOR}${idPattern})*(${TOKEN_CLASSIFIER_LANGUAGE_SEPARATOR}${idPattern})?$`;
 
+/**
+ * @internal
+ */
 export const fontStylePattern = '^(\\s*(italic|bold|underline))*\\s*$';
 
 export interface TokenSelector {
@@ -57,7 +78,13 @@ export class TokenStyle implements Readonly<TokenStyleData> {
 	}
 }
 
+/**
+ * @internal
+ */
 export namespace TokenStyle {
+	/**
+	 * @internal
+	 */
 	export function toJSONObject(style: TokenStyle): any {
 		return {
 			_foreground: style.foreground === undefined ? null : Color.Format.CSS.formatHexA(style.foreground, true),
@@ -66,6 +93,9 @@ export namespace TokenStyle {
 			_italic: style.italic === undefined ? null : style.italic,
 		};
 	}
+	/**
+	 * @internal
+	 */
 	export function fromJSONObject(obj: any): TokenStyle | undefined {
 		if (obj) {
 			const boolOrUndef = (b: any) => (typeof b === 'boolean') ? b : undefined;
@@ -74,6 +104,9 @@ export namespace TokenStyle {
 		}
 		return undefined;
 	}
+	/**
+	 * @internal
+	 */
 	export function equals(s1: any, s2: any): boolean {
 		if (s1 === s2) {
 			return true;
@@ -84,12 +117,21 @@ export namespace TokenStyle {
 			&& s1.underline === s2.underline
 			&& s1.italic === s2.italic;
 	}
+	/**
+	 * @internal
+	 */
 	export function is(s: any): s is TokenStyle {
 		return s instanceof TokenStyle;
 	}
+	/**
+	 * @internal
+	 */
 	export function fromData(data: { foreground?: Color, bold?: boolean, underline?: boolean, italic?: boolean }): TokenStyle {
 		return new TokenStyle(data.foreground, data.bold, data.underline, data.italic);
 	}
+	/**
+	 * @internal
+	 */
 	export function fromSettings(foreground: string | undefined, fontStyle: string | undefined, bold?: boolean, underline?: boolean, italic?: boolean): TokenStyle {
 		let foregroundColor = undefined;
 		if (foreground !== undefined) {
@@ -113,6 +155,9 @@ export namespace TokenStyle {
 
 export type ProbeScope = string[];
 
+/**
+ * @internal
+ */
 export interface TokenStyleFunction {
 	(theme: IColorTheme): TokenStyle | undefined;
 }
@@ -134,7 +179,13 @@ export interface SemanticTokenRule {
 	selector: TokenSelector;
 }
 
+/**
+ * @internal
+ */
 export namespace SemanticTokenRule {
+	/**
+	 * @internal
+	 */
 	export function fromJSONObject(registry: ITokenClassificationRegistry, o: any): SemanticTokenRule | undefined {
 		if (o && typeof o._selector === 'string' && o._style) {
 			const style = TokenStyle.fromJSONObject(o._style);
@@ -147,12 +198,18 @@ export namespace SemanticTokenRule {
 		}
 		return undefined;
 	}
+	/**
+	 * @internal
+	 */
 	export function toJSONObject(rule: SemanticTokenRule): any {
 		return {
 			_selector: rule.selector.id,
 			_style: TokenStyle.toJSONObject(rule.style)
 		};
 	}
+	/**
+	 * @internal
+	 */
 	export function equals(r1: SemanticTokenRule | undefined, r2: SemanticTokenRule | undefined) {
 		if (r1 === r2) {
 			return true;
@@ -161,6 +218,9 @@ export namespace SemanticTokenRule {
 			&& r1.selector && r2.selector && r1.selector.id === r2.selector.id
 			&& TokenStyle.equals(r1.style, r2.style);
 	}
+	/**
+	 * @internal
+	 */
 	export function is(r: any): r is SemanticTokenRule {
 		return r && r.selector && typeof r.selector.id === 'string' && TokenStyle.is(r.style);
 	}
@@ -247,6 +307,9 @@ export interface ITokenClassificationRegistry {
 	getTokenStylingSchema(): IJSONSchema;
 }
 
+/**
+ * @internal
+ */
 class TokenClassificationRegistry implements ITokenClassificationRegistry {
 
 	private readonly _onDidChangeSchema = new Emitter<void>();
@@ -454,8 +517,17 @@ class TokenClassificationRegistry implements ITokenClassificationRegistry {
 const CHAR_LANGUAGE = TOKEN_CLASSIFIER_LANGUAGE_SEPARATOR.charCodeAt(0);
 const CHAR_MODIFIER = CLASSIFIER_MODIFIER_SEPARATOR.charCodeAt(0);
 
+/**
+ * @internal
+ */
 export function parseClassifierString(s: string, defaultLanguage: string): { type: string, modifiers: string[], language: string; };
+/**
+ * @internal
+ */
 export function parseClassifierString(s: string, defaultLanguage?: string): { type: string, modifiers: string[], language: string | undefined; };
+/**
+ * @internal
+ */
 export function parseClassifierString(s: string, defaultLanguage: string | undefined): { type: string, modifiers: string[], language: string | undefined; } {
 	let k = s.length;
 	let language: string | undefined = defaultLanguage;
@@ -582,6 +654,9 @@ function getStylingSchemeEntry(description?: string, deprecationMessage?: string
 	};
 }
 
+/**
+ * @internal
+ */
 export const tokenStylingSchemaId = 'vscode://schemas/token-styling';
 
 let schemaRegistry = platform.Registry.as<IJSONContributionRegistry>(JSONExtensions.JSONContribution);

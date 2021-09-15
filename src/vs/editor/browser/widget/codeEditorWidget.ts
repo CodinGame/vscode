@@ -224,6 +224,9 @@ export class CodeEditorWidget extends Disposable implements editorBrowser.ICodeE
 	protected _actions: { [key: string]: editorCommon.IEditorAction; };
 
 	// --- Members logically associated to a model
+	/**
+	 * @internal
+	 */
 	protected _modelData: ModelData | null;
 
 	protected readonly _instantiationService: IInstantiationService;
@@ -246,6 +249,9 @@ export class CodeEditorWidget extends Disposable implements editorBrowser.ICodeE
 
 	private _bannerDomNode: HTMLElement | null = null;
 
+	/**
+	 * @internal
+	 */
 	constructor(
 		domElement: HTMLElement,
 		_options: Readonly<editorBrowser.IEditorConstructionOptions>,
@@ -347,6 +353,9 @@ export class CodeEditorWidget extends Disposable implements editorBrowser.ICodeE
 		this._codeEditorService.addCodeEditor(this);
 	}
 
+	/**
+	 * @internal
+	 */
 	protected _createConfiguration(options: Readonly<editorBrowser.IEditorConstructionOptions>, accessibilityService: IAccessibilityService): editorCommon.IConfiguration {
 		return new Configuration(this.isSimpleWidget, options, this._domElement, accessibilityService);
 	}
@@ -496,6 +505,9 @@ export class CodeEditorWidget extends Disposable implements editorBrowser.ICodeE
 		return this._modelData.viewModel.getVisibleRangesPlusViewportAboveBelow();
 	}
 
+	/**
+	 * @internal
+	 */
 	public getWhitespaces(): IEditorWhitespace[] {
 		if (!this._modelData) {
 			return [];
@@ -1132,6 +1144,9 @@ export class CodeEditorWidget extends Disposable implements editorBrowser.ICodeE
 		return false;
 	}
 
+	/**
+	 * @internal
+	 */
 	public _getViewModel(): IViewModel | null {
 		if (!this._modelData) {
 			return null;
@@ -1199,6 +1214,9 @@ export class CodeEditorWidget extends Disposable implements editorBrowser.ICodeE
 		this._modelData.viewModel.executeCommands(commands, source);
 	}
 
+	/**
+	 * @internal
+	 */
 	public changeDecorations(callback: (changeAccessor: IModelDecorationsChangeAccessor) => any): any {
 		if (!this._modelData) {
 			// callback will not be called
@@ -1308,6 +1326,9 @@ export class CodeEditorWidget extends Disposable implements editorBrowser.ICodeE
 		return layoutInfo;
 	}
 
+	/**
+	 * @internal
+	 */
 	public createOverviewRuler(cssClassName: string): editorBrowser.IOverviewRuler | null {
 		if (!this._modelData || !this._modelData.hasRealView) {
 			return null;
@@ -1481,6 +1502,9 @@ export class CodeEditorWidget extends Disposable implements editorBrowser.ICodeE
 		this._modelData.view.render(true, forceRedraw);
 	}
 
+	/**
+	 * @internal
+	 */
 	public setAriaOptions(options: editorBrowser.IEditorAriaOptions): void {
 		if (!this._modelData || !this._modelData.hasRealView) {
 			return;
@@ -1617,6 +1641,9 @@ export class CodeEditorWidget extends Disposable implements editorBrowser.ICodeE
 		this._modelData = new ModelData(model, viewModel, view, hasRealView, listenersToRemove);
 	}
 
+	/**
+	 * @internal
+	 */
 	protected _createView(viewModel: ViewModel): [View, boolean] {
 		let commandDelegate: ICommandDelegate;
 		if (this.isSimpleWidget) {
@@ -1741,6 +1768,9 @@ export class CodeEditorWidget extends Disposable implements editorBrowser.ICodeE
 		return this._telemetryData;
 	}
 
+	/**
+	 * @internal
+	 */
 	public hasModel(): this is editorBrowser.IActiveCodeEditor {
 		return (this._modelData !== null);
 	}

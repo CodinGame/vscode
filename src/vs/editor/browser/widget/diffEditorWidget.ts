@@ -226,6 +226,9 @@ export class DiffEditorWidget extends Disposable implements editorBrowser.IDiffE
 
 	private readonly _reviewPane: DiffReview;
 
+	/**
+	 * @internal
+	 */
 	constructor(
 		domElement: HTMLElement,
 		options: Readonly<editorBrowser.IDiffEditorConstructionOptions>,
@@ -587,6 +590,9 @@ export class DiffEditorWidget extends Disposable implements editorBrowser.IDiffE
 		return editor;
 	}
 
+	/**
+	 * @internal
+	 */
 	protected _createInnerEditor(instantiationService: IInstantiationService, container: HTMLElement, options: Readonly<editorBrowser.IEditorConstructionOptions>, editorWidgetOptions: ICodeEditorWidgetOptions): CodeEditorWidget {
 		return instantiationService.createInstance(CodeEditorWidget, container, options, editorWidgetOptions);
 	}
@@ -651,6 +657,9 @@ export class DiffEditorWidget extends Disposable implements editorBrowser.IDiffE
 		return this._diffComputationResult.changes;
 	}
 
+	/**
+	 * @internal
+	 */
 	public getDiffComputationResult(): IDiffComputationResult | null {
 		return this._diffComputationResult;
 	}
@@ -912,6 +921,9 @@ export class DiffEditorWidget extends Disposable implements editorBrowser.IDiffE
 		this._modifiedEditor.trigger(source, handlerId, payload);
 	}
 
+	/**
+	 * @internal
+	 */
 	public changeDecorations(callback: (changeAccessor: IModelDecorationsChangeAccessor) => any): any {
 		return this._modifiedEditor.changeDecorations(callback);
 	}

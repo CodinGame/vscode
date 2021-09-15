@@ -11,6 +11,9 @@ import { ITextResourceEditorInput } from 'vs/platform/editor/common/editor';
 import { createDecorator } from 'vs/platform/instantiation/common/instantiation';
 import { URI } from 'vs/base/common/uri';
 
+/**
+ * @internal
+ */
 export const ICodeEditorService = createDecorator<ICodeEditorService>('codeEditorService');
 
 export interface ICodeEditorService {
@@ -47,6 +50,9 @@ export interface ICodeEditorService {
 	setModelProperty(resource: URI, key: string, value: any): void;
 	getModelProperty(resource: URI, key: string): any;
 
+	/**
+	 * @internal
+	 */
 	setTransientModelProperty(model: ITextModel, key: string, value: any): void;
 	getTransientModelProperty(model: ITextModel, key: string): any;
 	getTransientModelProperties(model: ITextModel): [string, any][] | undefined;

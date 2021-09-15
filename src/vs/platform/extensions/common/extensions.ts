@@ -9,8 +9,17 @@ import { createDecorator } from 'vs/platform/instantiation/common/instantiation'
 import { ILocalization } from 'vs/platform/localizations/common/localizations';
 import { getRemoteName } from 'vs/platform/remote/common/remoteHosts';
 
+/**
+ * @internal
+ */
 export const MANIFEST_CACHE_FOLDER = 'CachedExtensions';
+/**
+ * @internal
+ */
 export const USER_MANIFEST_CACHE_FILE = 'user';
+/**
+ * @internal
+ */
 export const BUILTIN_MANIFEST_CACHE_FILE = 'builtin';
 
 export interface ICommand {
@@ -190,7 +199,9 @@ export interface IExtensionCapabilities {
 	readonly untrustedWorkspaces?: ExtensionUntrustedWorkspaceSupport;
 }
 
-
+/**
+ * @internal
+ */
 export const ALL_EXTENSION_KINDS: readonly ExtensionKind[] = ['ui', 'workspace', 'web'];
 export type ExtensionKind = 'ui' | 'workspace' | 'web';
 
@@ -201,6 +212,9 @@ export type ExtensionUntrustedWorkspaceSupport = { supported: true; } | { suppor
 export type ExtensionVirtualWorkspaceSupportType = boolean | LimitedWorkspaceSupportType;
 export type ExtensionVirtualWorkspaceSupport = boolean | { supported: true; } | { supported: false | LimitedWorkspaceSupportType, description: string };
 
+/**
+ * @internal
+ */
 export function getWorkspaceSupportTypeMessage(supportType: ExtensionUntrustedWorkspaceSupport | ExtensionVirtualWorkspaceSupport | undefined): string | undefined {
 	if (typeof supportType === 'object' && supportType !== null) {
 		if (supportType.supported !== true) {
@@ -210,7 +224,9 @@ export function getWorkspaceSupportTypeMessage(supportType: ExtensionUntrustedWo
 	return undefined;
 }
 
-
+/**
+ * @internal
+ */
 export function isIExtensionIdentifier(thing: any): thing is IExtensionIdentifier {
 	return thing
 		&& typeof thing === 'object'
@@ -223,6 +239,9 @@ export interface IExtensionIdentifier {
 	uuid?: string;
 }
 
+/**
+ * @internal
+ */
 export const EXTENSION_CATEGORIES = [
 	'Azure',
 	'Data Science',
@@ -348,14 +367,23 @@ export interface IExtensionDescription extends IExtensionManifest {
 	readonly extensionLocation: URI;
 }
 
+/**
+ * @internal
+ */
 export function isLanguagePackExtension(manifest: IExtensionManifest): boolean {
 	return manifest.contributes && manifest.contributes.localizations ? manifest.contributes.localizations.length > 0 : false;
 }
 
+/**
+ * @internal
+ */
 export function isAuthenticationProviderExtension(manifest: IExtensionManifest): boolean {
 	return manifest.contributes && manifest.contributes.authentication ? manifest.contributes.authentication.length > 0 : false;
 }
 
+/**
+ * @internal
+ */
 export function isResolverExtension(manifest: IExtensionManifest, remoteAuthority: string | undefined): boolean {
 	if (remoteAuthority) {
 		const activationEvent = `onResolveRemoteAuthority:${getRemoteName(remoteAuthority)}`;
@@ -364,7 +392,14 @@ export function isResolverExtension(manifest: IExtensionManifest, remoteAuthorit
 	return false;
 }
 
+/**
+ * @internal
+ */
 export const IBuiltinExtensionsScannerService = createDecorator<IBuiltinExtensionsScannerService>('IBuiltinExtensionsScannerService');
+
+/**
+ * @internal
+ */
 export interface IBuiltinExtensionsScannerService {
 	readonly _serviceBrand: undefined;
 	scanBuiltinExtensions(): Promise<IExtension[]>;

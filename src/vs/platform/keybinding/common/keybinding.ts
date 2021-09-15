@@ -46,6 +46,9 @@ export interface KeybindingsSchemaContribution {
 	getSchemaAdditions(): IJSONSchema[];
 }
 
+/**
+ * @internal
+ */
 export const IKeybindingService = createDecorator<IKeybindingService>('keybindingService');
 
 export interface IKeybindingService {

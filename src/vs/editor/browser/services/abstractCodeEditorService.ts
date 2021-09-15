@@ -122,6 +122,9 @@ export abstract class AbstractCodeEditorService extends Disposable implements IC
 		return undefined;
 	}
 
+	/**
+	 * @internal
+	 */
 	public setTransientModelProperty(model: ITextModel, key: string, value: any): void {
 		const uri = model.uri.toString();
 
@@ -157,6 +160,9 @@ export abstract class AbstractCodeEditorService extends Disposable implements IC
 		return this._transientWatchers[uri].keys().map(key => [key, this._transientWatchers[uri].get(key)]);
 	}
 
+	/**
+	 * @internal
+	 */
 	_removeWatcher(w: ModelTransientSettingWatcher): void {
 		delete this._transientWatchers[w.uri];
 	}
@@ -165,6 +171,9 @@ export abstract class AbstractCodeEditorService extends Disposable implements IC
 	abstract openCodeEditor(input: IResourceEditorInput, source: ICodeEditor | null, sideBySide?: boolean): Promise<ICodeEditor | null>;
 }
 
+/**
+ * @internal
+ */
 export class ModelTransientSettingWatcher {
 	public readonly uri: string;
 	private readonly _values: { [key: string]: any; };

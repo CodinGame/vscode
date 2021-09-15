@@ -169,9 +169,6 @@ export class TokenMetadata {
 	}
 }
 
-/**
- * @internal
- */
 export interface ILanguageIdCodec {
 	encodeLanguageId(languageId: string): LanguageId;
 	decodeLanguageId(languageId: LanguageId): string;

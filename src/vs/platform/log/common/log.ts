@@ -11,7 +11,13 @@ import { URI } from 'vs/base/common/uri';
 import { IEnvironmentService } from 'vs/platform/environment/common/environment';
 import { createDecorator } from 'vs/platform/instantiation/common/instantiation';
 
+/**
+ * @internal
+ */
 export const ILogService = createDecorator<ILogService>('logService');
+/**
+ * @internal
+ */
 export const ILoggerService = createDecorator<ILoggerService>('loggerService');
 
 function now(): string {
@@ -28,6 +34,9 @@ export enum LogLevel {
 	Off
 }
 
+/**
+ * @internal
+ */
 export const DEFAULT_LOG_LEVEL: LogLevel = LogLevel.Info;
 
 export interface ILogger extends IDisposable {
@@ -48,6 +57,9 @@ export interface ILogger extends IDisposable {
 	flush(): void;
 }
 
+/**
+ * @internal
+ */
 export function log(logger: ILogger, level: LogLevel, message: string): void {
 	switch (level) {
 		case LogLevel.Trace: logger.trace(message); break;
@@ -60,6 +72,9 @@ export function log(logger: ILogger, level: LogLevel, message: string): void {
 	}
 }
 
+/**
+ * @internal
+ */
 export function format(args: any): string {
 	let result = '';
 
@@ -138,6 +153,9 @@ export abstract class AbstractLogger extends Disposable {
 
 }
 
+/**
+ * @internal
+ */
 export abstract class AbstractMessageLogger extends AbstractLogger implements ILogger {
 
 	protected abstract log(level: LogLevel, message: string): void;
@@ -196,7 +214,9 @@ export abstract class AbstractMessageLogger extends AbstractLogger implements IL
 	flush(): void { }
 }
 
-
+/**
+ * @internal
+ */
 export class ConsoleMainLogger extends AbstractLogger implements ILogger {
 
 	private useColors: boolean;
@@ -329,6 +349,9 @@ export class ConsoleLogger extends AbstractLogger implements ILogger {
 	}
 }
 
+/**
+ * @internal
+ */
 export class AdapterLogger extends AbstractLogger implements ILogger {
 
 	constructor(private readonly adapter: { log: (logLevel: LogLevel, args: any[]) => void }, logLevel: LogLevel = DEFAULT_LOG_LEVEL) {
@@ -389,6 +412,9 @@ export class AdapterLogger extends AbstractLogger implements ILogger {
 	}
 }
 
+/**
+ * @internal
+ */
 export class MultiplexLogService extends AbstractLogger implements ILogService {
 	declare readonly _serviceBrand: undefined;
 
@@ -455,6 +481,9 @@ export class MultiplexLogService extends AbstractLogger implements ILogService {
 	}
 }
 
+/**
+ * @internal
+ */
 export class LogService extends Disposable implements ILogService {
 	declare readonly _serviceBrand: undefined;
 
@@ -504,6 +533,9 @@ export class LogService extends Disposable implements ILogService {
 	}
 }
 
+/**
+ * @internal
+ */
 export abstract class AbstractLoggerService extends Disposable implements ILoggerService {
 
 	declare readonly _serviceBrand: undefined;
@@ -548,6 +580,9 @@ export abstract class AbstractLoggerService extends Disposable implements ILogge
 	protected abstract doCreateLogger(resource: URI, logLevel: LogLevel, options?: ILoggerOptions): ILogger;
 }
 
+/**
+ * @internal
+ */
 export class NullLogService implements ILogService {
 	declare readonly _serviceBrand: undefined;
 	readonly onDidChangeLogLevel: Event<LogLevel> = new Emitter<LogLevel>().event;
@@ -563,6 +598,9 @@ export class NullLogService implements ILogService {
 	flush(): void { }
 }
 
+/**
+ * @internal
+ */
 export function getLogLevel(environmentService: IEnvironmentService): LogLevel {
 	if (environmentService.verbose) {
 		return LogLevel.Trace;
@@ -576,6 +614,9 @@ export function getLogLevel(environmentService: IEnvironmentService): LogLevel {
 	return DEFAULT_LOG_LEVEL;
 }
 
+/**
+ * @internal
+ */
 export function parseLogLevel(logLevel: string): LogLevel | undefined {
 	switch (logLevel) {
 		case 'trace':
@@ -596,6 +637,9 @@ export function parseLogLevel(logLevel: string): LogLevel | undefined {
 	return undefined;
 }
 
+/**
+ * @internal
+ */
 export function LogLevelToString(logLevel: LogLevel): string {
 	switch (logLevel) {
 		case LogLevel.Trace: return 'trace';
