@@ -6,6 +6,7 @@ import { create as create1 } from './vs/base/common/worker/simpleWorker';
 import { create as create2 } from './vs/editor/common/services/editorSimpleWorker';
 import { SyncDescriptor0, SyncDescriptor1, SyncDescriptor2, SyncDescriptor3, SyncDescriptor4, SyncDescriptor5, SyncDescriptor6, SyncDescriptor7, SyncDescriptor8 } from './vs/platform/instantiation/common/descriptors';
 import * as editorAPI from './vs/editor/editor.api';
+import { TokenStyleDefaults } from 'vs/platform/theme/common/tokenClassificationRegistry';
 
 (function () {
 	var a: any;
@@ -13,6 +14,9 @@ import * as editorAPI from './vs/editor/editor.api';
 	a = (<ServiceIdentifier<any>>b).type;
 	a = create1;
 	a = create2;
+	a = (<TokenStyleDefaults>b).light;
+	a = (<TokenStyleDefaults>b).dark;
+	a = (<TokenStyleDefaults>b).hc;
 
 	// injection madness
 	a = (<SyncDescriptor0<any>>b).ctor;
@@ -49,6 +53,14 @@ import * as editorAPI from './vs/editor/editor.api';
 	a = editorAPI.MarkerTag;
 	a = editorAPI.Uri;
 	a = editorAPI.Token;
+	a = editorAPI.MarkdownStringTextNewlineStyle
+	a = editorAPI.LogLevel
+	a = editorAPI.errorHandler
+	a = editorAPI.MarkdownString
+	a = editorAPI.Disposable
+	a = editorAPI.DisposableStore
+	a = editorAPI.ErrorHandler
 	a = editorAPI.editor;
 	a = editorAPI.languages;
+	a = editorAPI.extra
 })();
