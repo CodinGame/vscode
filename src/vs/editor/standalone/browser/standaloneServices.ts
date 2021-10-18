@@ -19,7 +19,6 @@ import { OS, isLinux, isMacintosh } from 'vs/base/common/platform';
 import Severity from 'vs/base/common/severity';
 import { URI } from 'vs/base/common/uri';
 import { IBulkEditOptions, IBulkEditResult, IBulkEditService, ResourceEdit, ResourceTextEdit } from 'vs/editor/browser/services/bulkEditService';
-import { isDiffEditorConfigurationKey, isEditorConfigurationKey } from 'vs/editor/common/config/editorConfigurationSchema';
 import { EditOperation } from 'vs/editor/common/core/editOperation';
 import { IPosition, Position as Pos } from 'vs/editor/common/core/position';
 import { Range } from 'vs/editor/common/core/range';
@@ -34,7 +33,7 @@ import { IContextKeyService, ContextKeyExpression } from 'vs/platform/contextkey
 import { IConfirmation, IConfirmationResult, IDialogOptions, IDialogService, IInputResult, IShowResult } from 'vs/platform/dialogs/common/dialogs';
 import { createDecorator, IInstantiationService, ServiceIdentifier } from 'vs/platform/instantiation/common/instantiation';
 import { AbstractKeybindingService } from 'vs/platform/keybinding/common/abstractKeybindingService';
-import { IKeybindingEvent, IKeybindingService, IKeyboardEvent, KeybindingSource, KeybindingsSchemaContribution } from 'vs/platform/keybinding/common/keybinding';
+import { IKeybindingEvent, IKeybindingService, IKeyboardEvent, IUserFriendlyKeybinding, KeybindingSource, KeybindingsSchemaContribution } from 'vs/platform/keybinding/common/keybinding';
 import { KeybindingResolver } from 'vs/platform/keybinding/common/keybindingResolver';
 import { IKeybindingItem, KeybindingsRegistry } from 'vs/platform/keybinding/common/keybindingsRegistry';
 import { ResolvedKeybindingItem } from 'vs/platform/keybinding/common/resolvedKeybindingItem';
@@ -86,6 +85,11 @@ import { MarkerService } from 'vs/platform/markers/common/markerService';
 import { IOpenerService } from 'vs/platform/opener/common/opener';
 import { IQuickInputService } from 'vs/platform/quickinput/common/quickInput';
 import { IStorageService, InMemoryStorageService } from 'vs/platform/storage/common/storage';
+import { IKeyboardMapper } from 'vs/platform/keyboardLayout/common/keyboardMapper';
+import { KeybindingIO } from 'vs/workbench/services/keybinding/common/keybindingIO';
+import { MacLinuxFallbackKeyboardMapper } from 'vs/workbench/services/keybinding/common/macLinuxFallbackKeyboardMapper';
+import { resolveUserKeybindingItems } from 'vs/workbench/services/keybinding/browser/keybindingService';
+import { isDiffEditorConfigurationKey, isEditorConfigurationKey } from 'vs/editor/common/config/editorConfigurationSchema';
 
 class SimpleModel implements IResolvedTextEditorModel {
 
@@ -310,6 +314,7 @@ export class StandaloneKeybindingService extends AbstractKeybindingService {
 	private _cachedResolver: KeybindingResolver | null;
 	private readonly _dynamicKeybindings: IKeybindingItem[];
 	private readonly _domNodeListeners: DomNodeListeners[];
+	private _userKeybindings: IUserFriendlyKeybinding[];
 
 	/**
 	 * @internal
@@ -326,6 +331,7 @@ export class StandaloneKeybindingService extends AbstractKeybindingService {
 
 		this._cachedResolver = null;
 		this._dynamicKeybindings = [];
+		this._userKeybindings = [];
 		this._domNodeListeners = [];
 
 		const addContainer = (domNode: HTMLElement) => {
@@ -389,6 +395,14 @@ export class StandaloneKeybindingService extends AbstractKeybindingService {
 		codeEditorService.listDiffEditors().forEach(addDiffEditor);
 	}
 
+	public setUserKeybindings(userKeybindings: IUserFriendlyKeybinding[]): void {
+		this._userKeybindings = userKeybindings;
+		this.updateResolver({
+			source: KeybindingSource.User,
+			keybindings: userKeybindings
+		});
+	}
+
 	public addDynamicKeybinding(commandId: string, _keybinding: number, handler: ICommandHandler, when: ContextKeyExpression | undefined): IDisposable {
 		const keybinding = createKeybinding(_keybinding, OS);
 
@@ -432,7 +446,12 @@ export class StandaloneKeybindingService extends AbstractKeybindingService {
 	protected _getResolver(): KeybindingResolver {
 		if (!this._cachedResolver) {
 			const defaults = this._toNormalizedKeybindingItems(KeybindingsRegistry.getDefaultKeybindings(), true);
-			const overrides = this._toNormalizedKeybindingItems(this._dynamicKeybindings, false);
+			const _keyboardMapper: IKeyboardMapper = new MacLinuxFallbackKeyboardMapper(OS);
+			const overrides = KeybindingResolver.handleRemovals(
+				([] as ResolvedKeybindingItem[])
+					.concat(this._toNormalizedKeybindingItems(this._dynamicKeybindings, false))
+					.concat(resolveUserKeybindingItems(this._userKeybindings.map(KeybindingIO.readUserKeybindingItem), false, _keyboardMapper))
+			);
 			this._cachedResolver = new KeybindingResolver(defaults, overrides, (str) => this._log(str));
 		}
 		return this._cachedResolver;
