@@ -138,7 +138,7 @@ class SimpleModel implements IResolvedTextEditorModel {
 	}
 }
 
-class StandaloneTextModelService implements ITextModelService {
+export class StandaloneTextModelService implements ITextModelService {
 	public _serviceBrand: undefined;
 
 	constructor(

@@ -160,7 +160,7 @@ export class Snippet {
 }
 
 
-interface JsonSerializedSnippet {
+export interface JsonSerializedSnippet {
 	body: string | string[];
 	scope: string;
 	prefix: string | string[] | undefined;

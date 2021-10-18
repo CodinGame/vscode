@@ -25,7 +25,7 @@ const HC_BLACK_THEME_NAME = 'hc-black';
 const colorRegistry = Registry.as<IColorRegistry>(Extensions.ColorContribution);
 const themingRegistry = Registry.as<IThemingRegistry>(ThemingExtensions.ThemingContribution);
 
-class StandaloneTheme implements IStandaloneTheme {
+export class StandaloneTheme implements IStandaloneTheme {
 
 	public readonly id: string;
 	public readonly themeName: string;

@@ -8,7 +8,7 @@ import { URI } from 'vs/base/common/uri';
 import { Disposable } from 'vs/base/common/lifecycle';
 import { TMScopeRegistry, IValidGrammarDefinition, IValidEmbeddedLanguagesMap } from 'vs/workbench/services/textMate/common/TMScopeRegistry';
 
-interface ITMGrammarFactoryHost {
+export interface ITMGrammarFactoryHost {
 	logTrace(msg: string): void;
 	logError(msg: string, err: any): void;
 	readFile(resource: URI): Promise<string>;

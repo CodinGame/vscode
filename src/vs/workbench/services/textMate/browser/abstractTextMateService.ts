@@ -399,7 +399,7 @@ export abstract class AbstractTextMateService extends Disposable implements ITex
 	protected abstract _loadVSCodeOnigurumWASM(): Promise<Response | ArrayBuffer>;
 }
 
-class TMTokenizationSupportWithLineLimit implements ITokenizationSupport {
+export class TMTokenizationSupportWithLineLimit implements ITokenizationSupport {
 	private readonly _languageId: string;
 	private readonly _encodedLanguageId: LanguageId;
 	private readonly _actual: TMTokenization;
