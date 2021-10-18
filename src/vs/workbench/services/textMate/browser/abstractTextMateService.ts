@@ -414,7 +414,7 @@ export abstract class AbstractTextMateService extends Disposable implements ITex
 	protected abstract _loadVSCodeOnigurumWASM(): Promise<Response | ArrayBuffer>;
 }
 
-class TMTokenizationSupport implements ITokenizationSupport {
+export class TMTokenizationSupport implements ITokenizationSupport {
 	private readonly _languageId: string;
 	private readonly _encodedLanguageId: LanguageId;
 	private readonly _actual: TMTokenization;
@@ -463,7 +463,7 @@ class TMTokenizationSupport implements ITokenizationSupport {
 	}
 }
 
-class TMTokenization extends Disposable {
+export class TMTokenization extends Disposable {
 
 	private readonly _grammar: import('vscode-textmate').IGrammar;
 	private readonly _containsEmbeddedLanguages: boolean;
