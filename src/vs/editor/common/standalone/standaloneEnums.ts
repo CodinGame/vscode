@@ -14,6 +14,14 @@ export enum AccessibilitySupport {
 	Disabled = 1,
 	Enabled = 2
 }
+/**
+ * Color scheme used by the OS and by color themes.
+ */
+export enum ColorScheme {
+	DARK = 'dark',
+	LIGHT = 'light',
+	HIGH_CONTRAST = 'hc'
+}
 
 export enum CompletionItemInsertTextRule {
 	/**
@@ -71,6 +79,43 @@ export enum CompletionTriggerKind {
 	TriggerForIncompleteCompletions = 2
 }
 
+export enum ConfigurationScope {
+	/**
+	 * Application specific configuration, which can be configured only in local user settings.
+	 */
+	APPLICATION = 1,
+	/**
+	 * Machine specific configuration, which can be configured only in local and remote user settings.
+	 */
+	MACHINE = 2,
+	/**
+	 * Window specific configuration, which can be configured in the user or workspace settings.
+	 */
+	WINDOW = 3,
+	/**
+	 * Resource specific configuration, which can be configured in the user, workspace or folder settings.
+	 */
+	RESOURCE = 4,
+	/**
+	 * Resource specific configuration that can be configured in language specific settings
+	 */
+	LANGUAGE_OVERRIDABLE = 5,
+	/**
+	 * Machine specific configuration that can also be configured in workspace or folder settings.
+	 */
+	MACHINE_OVERRIDABLE = 6
+}
+
+export enum ConfigurationTarget {
+	USER = 1,
+	USER_LOCAL = 2,
+	USER_REMOTE = 3,
+	WORKSPACE = 4,
+	WORKSPACE_FOLDER = 5,
+	DEFAULT = 6,
+	MEMORY = 7
+}
+
 /**
  * A positioning preference for rendering content widgets.
  */
@@ -87,6 +132,25 @@ export enum ContentWidgetPositionPreference {
 	 * Place the content widget below a position
 	 */
 	BELOW = 2
+}
+
+export enum ContextKeyExprType {
+	False = 0,
+	True = 1,
+	Defined = 2,
+	Not = 3,
+	Equals = 4,
+	NotEquals = 5,
+	And = 6,
+	Regex = 7,
+	NotRegex = 8,
+	Or = 9,
+	In = 10,
+	NotIn = 11,
+	Greater = 12,
+	GreaterEquals = 13,
+	Smaller = 14,
+	SmallerEquals = 15
 }
 
 /**
@@ -153,6 +217,11 @@ export enum DocumentHighlightKind {
 	 * Write-access of a symbol, like writing to a variable.
 	 */
 	Write = 2
+}
+
+export enum EditPresentationTypes {
+	Multiline = 'multilineText',
+	Singleline = 'singlelineText'
 }
 
 /**
@@ -331,6 +400,11 @@ export enum EndOfLineSequence {
 	 * Use carriage return and line feed (\r\n) as the end of line character.
 	 */
 	CRLF = 1
+}
+
+export enum ExtensionType {
+	System = 0,
+	User = 1
 }
 
 /**
@@ -574,6 +648,42 @@ export enum KeyCode {
 	MAX_VALUE = 126
 }
 
+export enum KeybindingSource {
+	Default = 1,
+	User = 2
+}
+
+export enum KeybindingWeight {
+	EditorCore = 0,
+	EditorContrib = 100,
+	WorkbenchContrib = 200,
+	BuiltinExtension = 300,
+	ExternalExtension = 400
+}
+
+/**
+ * Open ended enum at runtime
+ */
+export enum LanguageId {
+	Null = 0,
+	PlainText = 1
+}
+
+export enum LogLevel {
+	Trace = 0,
+	Debug = 1,
+	Info = 2,
+	Warning = 3,
+	Error = 4,
+	Critical = 5,
+	Off = 6
+}
+
+export enum MarkdownStringTextNewlineStyle {
+	Paragraph = 0,
+	Break = 1
+}
+
 export enum MarkerSeverity {
 	Hint = 1,
 	Info = 2,
@@ -656,6 +766,12 @@ export enum MouseTargetType {
 	OUTSIDE_EDITOR = 13
 }
 
+export enum OperatingSystem {
+	Windows = 1,
+	Macintosh = 2,
+	Linux = 3
+}
+
 /**
  * A positioning preference for rendering overlay widgets.
  */
@@ -684,6 +800,15 @@ export enum OverviewRulerLane {
 	Full = 7
 }
 
+export enum ProgressLocation {
+	Explorer = 1,
+	Scm = 3,
+	Extensions = 5,
+	Window = 10,
+	Notification = 15,
+	Dialog = 20
+}
+
 export enum RenderLineNumbersType {
 	Off = 0,
 	On = 1,
@@ -696,6 +821,207 @@ export enum RenderMinimap {
 	None = 0,
 	Text = 1,
 	Blocks = 2
+}
+
+/**
+ * keyboardEvent.code
+ */
+export enum ScanCode {
+	DependsOnKbLayout = -1,
+	None = 0,
+	Hyper = 1,
+	Super = 2,
+	Fn = 3,
+	FnLock = 4,
+	Suspend = 5,
+	Resume = 6,
+	Turbo = 7,
+	Sleep = 8,
+	WakeUp = 9,
+	KeyA = 10,
+	KeyB = 11,
+	KeyC = 12,
+	KeyD = 13,
+	KeyE = 14,
+	KeyF = 15,
+	KeyG = 16,
+	KeyH = 17,
+	KeyI = 18,
+	KeyJ = 19,
+	KeyK = 20,
+	KeyL = 21,
+	KeyM = 22,
+	KeyN = 23,
+	KeyO = 24,
+	KeyP = 25,
+	KeyQ = 26,
+	KeyR = 27,
+	KeyS = 28,
+	KeyT = 29,
+	KeyU = 30,
+	KeyV = 31,
+	KeyW = 32,
+	KeyX = 33,
+	KeyY = 34,
+	KeyZ = 35,
+	Digit1 = 36,
+	Digit2 = 37,
+	Digit3 = 38,
+	Digit4 = 39,
+	Digit5 = 40,
+	Digit6 = 41,
+	Digit7 = 42,
+	Digit8 = 43,
+	Digit9 = 44,
+	Digit0 = 45,
+	Enter = 46,
+	Escape = 47,
+	Backspace = 48,
+	Tab = 49,
+	Space = 50,
+	Minus = 51,
+	Equal = 52,
+	BracketLeft = 53,
+	BracketRight = 54,
+	Backslash = 55,
+	IntlHash = 56,
+	Semicolon = 57,
+	Quote = 58,
+	Backquote = 59,
+	Comma = 60,
+	Period = 61,
+	Slash = 62,
+	CapsLock = 63,
+	F1 = 64,
+	F2 = 65,
+	F3 = 66,
+	F4 = 67,
+	F5 = 68,
+	F6 = 69,
+	F7 = 70,
+	F8 = 71,
+	F9 = 72,
+	F10 = 73,
+	F11 = 74,
+	F12 = 75,
+	PrintScreen = 76,
+	ScrollLock = 77,
+	Pause = 78,
+	Insert = 79,
+	Home = 80,
+	PageUp = 81,
+	Delete = 82,
+	End = 83,
+	PageDown = 84,
+	ArrowRight = 85,
+	ArrowLeft = 86,
+	ArrowDown = 87,
+	ArrowUp = 88,
+	NumLock = 89,
+	NumpadDivide = 90,
+	NumpadMultiply = 91,
+	NumpadSubtract = 92,
+	NumpadAdd = 93,
+	NumpadEnter = 94,
+	Numpad1 = 95,
+	Numpad2 = 96,
+	Numpad3 = 97,
+	Numpad4 = 98,
+	Numpad5 = 99,
+	Numpad6 = 100,
+	Numpad7 = 101,
+	Numpad8 = 102,
+	Numpad9 = 103,
+	Numpad0 = 104,
+	NumpadDecimal = 105,
+	IntlBackslash = 106,
+	ContextMenu = 107,
+	Power = 108,
+	NumpadEqual = 109,
+	F13 = 110,
+	F14 = 111,
+	F15 = 112,
+	F16 = 113,
+	F17 = 114,
+	F18 = 115,
+	F19 = 116,
+	F20 = 117,
+	F21 = 118,
+	F22 = 119,
+	F23 = 120,
+	F24 = 121,
+	Open = 122,
+	Help = 123,
+	Select = 124,
+	Again = 125,
+	Undo = 126,
+	Cut = 127,
+	Copy = 128,
+	Paste = 129,
+	Find = 130,
+	AudioVolumeMute = 131,
+	AudioVolumeUp = 132,
+	AudioVolumeDown = 133,
+	NumpadComma = 134,
+	IntlRo = 135,
+	KanaMode = 136,
+	IntlYen = 137,
+	Convert = 138,
+	NonConvert = 139,
+	Lang1 = 140,
+	Lang2 = 141,
+	Lang3 = 142,
+	Lang4 = 143,
+	Lang5 = 144,
+	Abort = 145,
+	Props = 146,
+	NumpadParenLeft = 147,
+	NumpadParenRight = 148,
+	NumpadBackspace = 149,
+	NumpadMemoryStore = 150,
+	NumpadMemoryRecall = 151,
+	NumpadMemoryClear = 152,
+	NumpadMemoryAdd = 153,
+	NumpadMemorySubtract = 154,
+	NumpadClear = 155,
+	NumpadClearEntry = 156,
+	ControlLeft = 157,
+	ShiftLeft = 158,
+	AltLeft = 159,
+	MetaLeft = 160,
+	ControlRight = 161,
+	ShiftRight = 162,
+	AltRight = 163,
+	MetaRight = 164,
+	BrightnessUp = 165,
+	BrightnessDown = 166,
+	MediaPlay = 167,
+	MediaRecord = 168,
+	MediaFastForward = 169,
+	MediaRewind = 170,
+	MediaTrackNext = 171,
+	MediaTrackPrevious = 172,
+	MediaStop = 173,
+	Eject = 174,
+	MediaPlayPause = 175,
+	MediaSelect = 176,
+	LaunchMail = 177,
+	LaunchApp2 = 178,
+	LaunchApp1 = 179,
+	SelectTask = 180,
+	LaunchScreenSaver = 181,
+	BrowserSearch = 182,
+	BrowserHome = 183,
+	BrowserBack = 184,
+	BrowserForward = 185,
+	BrowserStop = 186,
+	BrowserRefresh = 187,
+	BrowserFavorites = 188,
+	ZoomToggle = 189,
+	MailReply = 190,
+	MailForward = 191,
+	MailSend = 192,
+	MAX_VALUE = 193
 }
 
 export enum ScrollType {
@@ -727,6 +1053,28 @@ export enum SignatureHelpTriggerKind {
 	Invoke = 1,
 	TriggerCharacter = 2,
 	ContentChange = 3
+}
+
+export enum SnippetSortOrder {
+	Top = 0,
+	Inline = 1,
+	Bottom = 2
+}
+
+export enum SnippetSource {
+	User = 1,
+	Workspace = 2,
+	Extension = 3
+}
+
+/**
+ * A standard token type. Values are 2^x such that a bit mask can be used.
+ */
+export enum StandardTokenType {
+	Other = 0,
+	Comment = 1,
+	String = 2,
+	RegEx = 4
 }
 
 /**
@@ -823,6 +1171,26 @@ export enum TextEditorCursorStyle {
 	 * As a thin horizontal line (sitting under a character).
 	 */
 	UnderlineThin = 6
+}
+
+export enum TextEditorSelectionRevealType {
+	/**
+	 * Option to scroll vertically or horizontally as necessary and reveal a range centered vertically.
+	 */
+	Center = 0,
+	/**
+	 * Option to scroll vertically or horizontally as necessary and reveal a range centered vertically only if it lies outside the viewport.
+	 */
+	CenterIfOutsideViewport = 1,
+	/**
+	 * Option to scroll vertically or horizontally as necessary and reveal a range close to the top of the viewport, but not quite at the top.
+	 */
+	NearTop = 2,
+	/**
+	 * Option to scroll vertically or horizontally as necessary and reveal a range close to the top of the viewport, but not quite at the top.
+	 * Only if it lies outside the viewport
+	 */
+	NearTopIfOutsideViewport = 3
 }
 
 /**
