@@ -564,14 +564,18 @@ export class ColorThemeData implements IWorkbenchColorTheme {
 		this.customTokenScopeMatchers = undefined;
 	}
 
-	/**
-	 * @internal
-	 */
-	toStorage(storageService: IStorageService) {
+	get colorMapData() {
 		let colorMapData: { [key: string]: string } = {};
 		for (let key in this.colorMap) {
 			colorMapData[key] = Color.Format.CSS.formatHexA(this.colorMap[key], true);
 		}
+		return colorMapData;
+	}
+
+	/**
+	 * @internal
+	 */
+	toStorage(storageService: IStorageService) {
 		// no need to persist custom colors, they will be taken from the settings
 		const value = JSON.stringify({
 			id: this.id,
@@ -581,7 +585,7 @@ export class ColorThemeData implements IWorkbenchColorTheme {
 			semanticTokenRules: this.semanticTokenRules.map(SemanticTokenRule.toJSONObject),
 			extensionData: ExtensionData.toJSONObject(this.extensionData),
 			themeSemanticHighlighting: this.themeSemanticHighlighting,
-			colorMap: colorMapData,
+			colorMap: this.colorMapData,
 			watch: this.watch
 		});
 
