@@ -24,8 +24,8 @@ import { IModelService } from 'vs/editor/common/services/modelService';
 import { IResolvedTextEditorModel, ITextModelContentProvider, ITextModelService } from 'vs/editor/common/services/resolverService';
 import { ITextResourceConfigurationService, ITextResourcePropertiesService, ITextResourceConfigurationChangeEvent } from 'vs/editor/common/services/textResourceConfigurationService';
 import { CommandsRegistry, ICommandEvent, ICommandHandler, ICommandService } from 'vs/platform/commands/common/commands';
-import { IConfigurationChangeEvent, IConfigurationData, IConfigurationOverrides, IConfigurationService, IConfigurationModel, IConfigurationValue, ConfigurationTarget } from 'vs/platform/configuration/common/configuration';
-import { Configuration, ConfigurationModel, DefaultConfigurationModel, ConfigurationChangeEvent } from 'vs/platform/configuration/common/configurationModels';
+import { IConfigurationChangeEvent, IConfigurationData, IConfigurationOverrides, IConfigurationService, IConfigurationModel, IConfigurationValue, ConfigurationTarget, IConfigurationChange } from 'vs/platform/configuration/common/configuration';
+import { Configuration, ConfigurationModel, DefaultConfigurationModel, ConfigurationChangeEvent, ConfigurationModelParser } from 'vs/platform/configuration/common/configurationModels';
 import { IContextKeyService, ContextKeyExpression } from 'vs/platform/contextkey/common/contextkey';
 import { IConfirmation, IConfirmationResult, IDialogOptions, IDialogService, IInputResult, IShowResult } from 'vs/platform/dialogs/common/dialogs';
 import { IInstantiationService } from 'vs/platform/instantiation/common/instantiation';
@@ -51,6 +51,8 @@ import { resolveUserKeybindingItems } from 'vs/workbench/services/keybinding/bro
 import { KeybindingIO } from 'vs/workbench/services/keybinding/common/keybindingIO';
 import { MacLinuxFallbackKeyboardMapper } from 'vs/workbench/services/keybinding/common/macLinuxFallbackKeyboardMapper';
 import { IKeyboardMapper } from 'vs/platform/keyboardLayout/common/keyboardMapper';
+import { Extensions, IConfigurationRegistry } from 'vs/platform/configuration/common/configurationRegistry';
+import { Registry } from 'vs/platform/registry/common/platform';
 
 export class SimpleModel implements IResolvedTextEditorModel {
 
@@ -470,7 +472,7 @@ function isConfigurationOverrides(thing: any): thing is IConfigurationOverrides 
 		&& (!thing.resource || thing.resource instanceof URI);
 }
 
-export class SimpleConfigurationService implements IConfigurationService {
+export class SimpleConfigurationService extends Disposable implements IConfigurationService {
 
 	declare readonly _serviceBrand: undefined;
 
@@ -480,7 +482,44 @@ export class SimpleConfigurationService implements IConfigurationService {
 	private readonly _configuration: Configuration;
 
 	constructor() {
+		super();
 		this._configuration = new Configuration(new DefaultConfigurationModel(), new ConfigurationModel());
+		this._register(Registry.as<IConfigurationRegistry>(Extensions.Configuration).onDidUpdateConfiguration(configurationProperties => this.onDidDefaultConfigurationChange(configurationProperties)));
+	}
+
+	public updateUserConfiguration(configurationJson: string) {
+		const parser = new ConfigurationModelParser('userSettings');
+		parser.parse(configurationJson || '{}');
+		this.onDidChangeUserConfiguration(parser.configurationModel);
+	}
+
+	private onDidChangeUserConfiguration(userConfigurationModel: ConfigurationModel): void {
+		const previous = this._configuration.toData();
+		const change = this._configuration.compareAndUpdateLocalUserConfiguration(userConfigurationModel);
+		this.trigger(change, previous, ConfigurationTarget.USER);
+	}
+
+	private onDidDefaultConfigurationChange(keys: string[]): void {
+		const previous = this._configuration.toData();
+		const change = this._configuration.compareAndUpdateDefaultConfiguration(new DefaultConfigurationModel(), keys);
+		this.trigger(change, previous, ConfigurationTarget.DEFAULT);
+	}
+
+	private trigger(configurationChange: IConfigurationChange, previous: IConfigurationData, source: ConfigurationTarget): void {
+		const event = new ConfigurationChangeEvent(configurationChange, { data: previous }, this._configuration);
+		event.source = source;
+		event.sourceConfig = this.getTargetConfiguration(source);
+		this._onDidChangeConfiguration.fire(event);
+	}
+
+	private getTargetConfiguration(target: ConfigurationTarget): any {
+		switch (target) {
+			case ConfigurationTarget.DEFAULT:
+				return this._configuration.defaults.contents;
+			case ConfigurationTarget.USER:
+				return this._configuration.localUserConfiguration.contents;
+		}
+		return {};
 	}
 
 	getValue<T>(): T;
