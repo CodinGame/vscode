@@ -30,7 +30,7 @@ import { IContextKeyService, ContextKeyExpression } from 'vs/platform/contextkey
 import { IConfirmation, IConfirmationResult, IDialogOptions, IDialogService, IInputResult, IShowResult } from 'vs/platform/dialogs/common/dialogs';
 import { IInstantiationService } from 'vs/platform/instantiation/common/instantiation';
 import { AbstractKeybindingService } from 'vs/platform/keybinding/common/abstractKeybindingService';
-import { IKeybindingEvent, IKeyboardEvent, KeybindingSource, KeybindingsSchemaContribution } from 'vs/platform/keybinding/common/keybinding';
+import { IKeybindingEvent, IKeyboardEvent, IUserFriendlyKeybinding, KeybindingSource, KeybindingsSchemaContribution } from 'vs/platform/keybinding/common/keybinding';
 import { KeybindingResolver } from 'vs/platform/keybinding/common/keybindingResolver';
 import { IKeybindingItem, KeybindingsRegistry } from 'vs/platform/keybinding/common/keybindingsRegistry';
 import { ResolvedKeybindingItem } from 'vs/platform/keybinding/common/resolvedKeybindingItem';
@@ -47,6 +47,10 @@ import { ClassifiedEvent, StrictPropertyCheck, GDPRClassification } from 'vs/pla
 import { basename } from 'vs/base/common/resources';
 import { ICodeEditorService } from 'vs/editor/browser/services/codeEditorService';
 import { ILogService } from 'vs/platform/log/common/log';
+import { resolveUserKeybindingItems } from 'vs/workbench/services/keybinding/browser/keybindingService';
+import { KeybindingIO } from 'vs/workbench/services/keybinding/common/keybindingIO';
+import { MacLinuxFallbackKeyboardMapper } from 'vs/workbench/services/keybinding/common/macLinuxFallbackKeyboardMapper';
+import { IKeyboardMapper } from 'vs/platform/keyboardLayout/common/keyboardMapper';
 
 export class SimpleModel implements IResolvedTextEditorModel {
 
@@ -300,6 +304,7 @@ export class StandaloneCommandService implements ICommandService {
 export class StandaloneKeybindingService extends AbstractKeybindingService {
 	private _cachedResolver: KeybindingResolver | null;
 	private readonly _dynamicKeybindings: IKeybindingItem[];
+	private _userKeybindings: IUserFriendlyKeybinding[];
 
 	/**
 	 * @internal
@@ -316,6 +321,7 @@ export class StandaloneKeybindingService extends AbstractKeybindingService {
 
 		this._cachedResolver = null;
 		this._dynamicKeybindings = [];
+		this._userKeybindings = [];
 
 		// for standard keybindings
 		this._register(dom.addDisposableListener(domNode, dom.EventType.KEY_DOWN, (e: KeyboardEvent) => {
@@ -335,6 +341,14 @@ export class StandaloneKeybindingService extends AbstractKeybindingService {
 				keyEvent.preventDefault();
 			}
 		}));
+	}
+
+	public setUserKeybindings(userKeybindings: IUserFriendlyKeybinding[]): void {
+		this._userKeybindings = userKeybindings;
+		this.updateResolver({
+			source: KeybindingSource.User,
+			keybindings: userKeybindings
+		});
 	}
 
 	public addDynamicKeybinding(commandId: string, _keybinding: number, handler: ICommandHandler, when: ContextKeyExpression | undefined): IDisposable {
@@ -380,7 +394,11 @@ export class StandaloneKeybindingService extends AbstractKeybindingService {
 	protected _getResolver(): KeybindingResolver {
 		if (!this._cachedResolver) {
 			const defaults = this._toNormalizedKeybindingItems(KeybindingsRegistry.getDefaultKeybindings(), true);
-			const overrides = this._toNormalizedKeybindingItems(this._dynamicKeybindings, false);
+			const _keyboardMapper: IKeyboardMapper = new MacLinuxFallbackKeyboardMapper(OS);
+			const overrides = KeybindingResolver.combine(
+				this._toNormalizedKeybindingItems(this._dynamicKeybindings, false),
+				resolveUserKeybindingItems(this._userKeybindings.map(KeybindingIO.readUserKeybindingItem), false, _keyboardMapper)
+			);
 			this._cachedResolver = new KeybindingResolver(defaults, overrides, (str) => this._log(str));
 		}
 		return this._cachedResolver;
