@@ -60,7 +60,7 @@ export class StandaloneCodeEditorService extends AbstractCodeEditorService {
 		return Promise.resolve(this.doOpenEditor(source, input));
 	}
 
-	private doOpenEditor(editor: ICodeEditor, input: ITextResourceEditorInput): ICodeEditor | null {
+	public doOpenEditor(editor: ICodeEditor, input: ITextResourceEditorInput): ICodeEditor | null {
 		const model = this.findModel(editor, input.resource);
 		if (!model) {
 			if (input.resource) {

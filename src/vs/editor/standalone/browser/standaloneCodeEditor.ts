@@ -259,7 +259,7 @@ function createAriaDomNode(parent: HTMLElement | undefined) {
  */
 export class StandaloneCodeEditor extends CodeEditorWidget implements IStandaloneCodeEditor {
 
-	private readonly _standaloneKeybindingService: StandaloneKeybindingService | null;
+	public readonly _standaloneKeybindingService: StandaloneKeybindingService | null;
 
 	/**
 	 * @internal
