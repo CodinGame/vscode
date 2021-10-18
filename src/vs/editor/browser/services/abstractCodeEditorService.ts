@@ -352,7 +352,7 @@ export class GlobalStyleSheet {
 	}
 }
 
-interface IModelDecorationOptionsProvider extends IDisposable {
+export interface IModelDecorationOptionsProvider extends IDisposable {
 	refCount: number;
 	getOptions(codeEditorService: AbstractCodeEditorService, writable: boolean): IModelDecorationOptions;
 	resolveDecorationCSSRules(): CSSRuleList;

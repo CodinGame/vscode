@@ -49,7 +49,7 @@ export interface RangeProvider {
 	dispose(): void;
 }
 
-interface FoldingStateMemento {
+export interface FoldingStateMemento {
 	collapsedRegions?: CollapseMemento;
 	lineCount?: number;
 	provider?: string;

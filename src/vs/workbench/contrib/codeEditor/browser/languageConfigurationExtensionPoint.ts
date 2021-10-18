@@ -18,32 +18,32 @@ import { ITextMateService } from 'vs/workbench/services/textMate/browser/textMat
 import { getParseErrorMessage } from 'vs/base/common/jsonErrorMessages';
 import { IExtensionResourceLoaderService } from 'vs/workbench/services/extensionResourceLoader/common/extensionResourceLoader';
 
-interface IRegExp {
+export interface IRegExp {
 	pattern: string;
 	flags?: string;
 }
 
-interface IIndentationRules {
+export interface IIndentationRules {
 	decreaseIndentPattern: string | IRegExp;
 	increaseIndentPattern: string | IRegExp;
 	indentNextLinePattern?: string | IRegExp;
 	unIndentedLinePattern?: string | IRegExp;
 }
 
-interface IEnterAction {
+export interface IEnterAction {
 	indent: 'none' | 'indent' | 'indentOutdent' | 'outdent';
 	appendText?: string;
 	removeText?: number;
 }
 
-interface IOnEnterRule {
+export interface IOnEnterRule {
 	beforeText: string | IRegExp;
 	afterText?: string | IRegExp;
 	previousLineText?: string | IRegExp;
 	action: IEnterAction;
 }
 
-interface ILanguageConfiguration {
+export interface ILanguageConfiguration {
 	comments?: CommentRule;
 	brackets?: CharacterPair[];
 	autoClosingPairs?: Array<CharacterPair | IAutoClosingPairConditional>;
