@@ -148,6 +148,75 @@ export const enum SnippetSource {
 	Extension = 3,
 }
 
+
+export function parseSnippet(name: string, snippet: JsonSerializedSnippet, defaultScopes: string[] | undefined, source: string, snippetSource: SnippetSource, snippetIdentifier?: string): Snippet[] {
+	let { prefix, body, description } = snippet;
+
+	if (!prefix) {
+		prefix = '';
+	}
+
+	if (Array.isArray(body)) {
+		body = body.join('\n');
+	}
+	if (typeof body !== 'string') {
+		return [];
+	}
+
+	if (Array.isArray(description)) {
+		description = description.join('\n');
+	}
+
+	let scopes: string[];
+	if (defaultScopes) {
+		scopes = defaultScopes;
+	} else if (typeof snippet.scope === 'string') {
+		scopes = snippet.scope.split(',').map(s => s.trim()).filter(s => !isFalsyOrWhitespace(s));
+	} else {
+		scopes = [];
+	}
+
+	const bucket: Snippet[] = [];
+	for (const _prefix of Array.isArray(prefix) ? prefix : Iterable.single(prefix)) {
+		bucket.push(new Snippet(
+			scopes,
+			name,
+			_prefix,
+			description,
+			body,
+			source,
+			snippetSource,
+			snippetIdentifier
+		));
+	}
+	return bucket;
+}
+
+export function snippetScopeSelect(data: Snippet[], selector: string, bucket: Snippet[]): void {
+	// for `my.code-snippets` files we need to look at each snippet
+	for (const snippet of data) {
+		const len = snippet.scopes.length;
+		if (len === 0) {
+			// always accept
+			bucket.push(snippet);
+
+		} else {
+			for (let i = 0; i < len; i++) {
+				// match
+				if (snippet.scopes[i] === selector) {
+					bucket.push(snippet);
+					break; // match only once!
+				}
+			}
+		}
+	}
+
+	let idx = selector.lastIndexOf('.');
+	if (idx >= 0) {
+		snippetScopeSelect(data, selector.substring(0, idx), bucket);
+	}
+}
+
 export class SnippetFile {
 
 	readonly data: Snippet[] = [];
@@ -184,28 +253,7 @@ export class SnippetFile {
 	}
 
 	private _scopeSelect(selector: string, bucket: Snippet[]): void {
-		// for `my.code-snippets` files we need to look at each snippet
-		for (const snippet of this.data) {
-			const len = snippet.scopes.length;
-			if (len === 0) {
-				// always accept
-				bucket.push(snippet);
-
-			} else {
-				for (let i = 0; i < len; i++) {
-					// match
-					if (snippet.scopes[i] === selector) {
-						bucket.push(snippet);
-						break; // match only once!
-					}
-				}
-			}
-		}
-
-		let idx = selector.lastIndexOf('.');
-		if (idx >= 0) {
-			this._scopeSelect(selector.substring(0, idx), bucket);
-		}
+		snippetScopeSelect(this.data, selector, bucket);
 	}
 
 	private async _load(): Promise<string> {
@@ -247,32 +295,6 @@ export class SnippetFile {
 
 	private _parseSnippet(name: string, snippet: JsonSerializedSnippet, bucket: Snippet[]): void {
 
-		let { prefix, body, description } = snippet;
-
-		if (!prefix) {
-			prefix = '';
-		}
-
-		if (Array.isArray(body)) {
-			body = body.join('\n');
-		}
-		if (typeof body !== 'string') {
-			return;
-		}
-
-		if (Array.isArray(description)) {
-			description = description.join('\n');
-		}
-
-		let scopes: string[];
-		if (this.defaultScopes) {
-			scopes = this.defaultScopes;
-		} else if (typeof snippet.scope === 'string') {
-			scopes = snippet.scope.split(',').map(s => s.trim()).filter(s => !isFalsyOrWhitespace(s));
-		} else {
-			scopes = [];
-		}
-
 		let source: string;
 		if (this._extension) {
 			// extension snippet -> show the name of the extension
@@ -290,17 +312,13 @@ export class SnippetFile {
 			}
 		}
 
-		for (const _prefix of Array.isArray(prefix) ? prefix : Iterable.single(prefix)) {
-			bucket.push(new Snippet(
-				scopes,
-				name,
-				_prefix,
-				description,
-				body,
-				source,
-				this.source,
-				this._extension && `${relativePath(this._extension.extensionLocation, this.location)}/${name}`
-			));
-		}
+		bucket.push(...parseSnippet(
+			name,
+			snippet,
+			this.defaultScopes,
+			source,
+			this.source,
+			this._extension && `${relativePath(this._extension.extensionLocation, this.location)}/${name}`
+		));
 	}
 }

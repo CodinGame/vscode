@@ -30,6 +30,56 @@ import { IExtensionResourceLoaderService } from 'vs/workbench/services/extension
 import { IProgressService, ProgressLocation } from 'vs/platform/progress/common/progress';
 import { TMTokenization } from 'vs/workbench/services/textMate/common/TMTokenization';
 
+export function parseTextMateGrammar(grammar: Omit<ITMSyntaxExtensionPoint, 'path'>, languageService: ILanguageService): Omit<IValidGrammarDefinition, 'location'> {
+	const embeddedLanguages: IValidEmbeddedLanguagesMap = Object.create(null);
+	if (grammar.embeddedLanguages) {
+		let scopes = Object.keys(grammar.embeddedLanguages);
+		for (let i = 0, len = scopes.length; i < len; i++) {
+			let scope = scopes[i];
+			let language = grammar.embeddedLanguages[scope];
+			if (typeof language !== 'string') {
+				// never hurts to be too careful
+				continue;
+			}
+			if (languageService.isRegisteredLanguageId(language)) {
+				embeddedLanguages[scope] = languageService.languageIdCodec.encodeLanguageId(language);
+			}
+		}
+	}
+
+	const tokenTypes: IValidTokenTypeMap = Object.create(null);
+	if (grammar.tokenTypes) {
+		const scopes = Object.keys(grammar.tokenTypes);
+		for (const scope of scopes) {
+			const tokenType = grammar.tokenTypes[scope];
+			switch (tokenType) {
+				case 'string':
+					tokenTypes[scope] = StandardTokenType.String;
+					break;
+				case 'other':
+					tokenTypes[scope] = StandardTokenType.Other;
+					break;
+				case 'comment':
+					tokenTypes[scope] = StandardTokenType.Comment;
+					break;
+			}
+		}
+	}
+
+	let validLanguageId: string | null = null;
+	if (grammar.language && languageService.isRegisteredLanguageId(grammar.language)) {
+		validLanguageId = grammar.language;
+	}
+
+	return {
+		language: validLanguageId ? validLanguageId : undefined,
+		scopeName: grammar.scopeName,
+		embeddedLanguages: embeddedLanguages,
+		tokenTypes: tokenTypes,
+		injectTo: grammar.injectTo,
+	};
+}
+
 export abstract class AbstractTextMateService extends Disposable implements ITextMateService {
 	public _serviceBrand: undefined;
 
@@ -91,58 +141,14 @@ export abstract class AbstractTextMateService extends Disposable implements ITex
 						continue;
 					}
 					const grammarLocation = resources.joinPath(extension.description.extensionLocation, grammar.path);
-
-					const embeddedLanguages: IValidEmbeddedLanguagesMap = Object.create(null);
-					if (grammar.embeddedLanguages) {
-						let scopes = Object.keys(grammar.embeddedLanguages);
-						for (let i = 0, len = scopes.length; i < len; i++) {
-							let scope = scopes[i];
-							let language = grammar.embeddedLanguages[scope];
-							if (typeof language !== 'string') {
-								// never hurts to be too careful
-								continue;
-							}
-							if (this._languageService.isRegisteredLanguageId(language)) {
-								embeddedLanguages[scope] = this._languageService.languageIdCodec.encodeLanguageId(language);
-							}
-						}
-					}
-
-					const tokenTypes: IValidTokenTypeMap = Object.create(null);
-					if (grammar.tokenTypes) {
-						const scopes = Object.keys(grammar.tokenTypes);
-						for (const scope of scopes) {
-							const tokenType = grammar.tokenTypes[scope];
-							switch (tokenType) {
-								case 'string':
-									tokenTypes[scope] = StandardTokenType.String;
-									break;
-								case 'other':
-									tokenTypes[scope] = StandardTokenType.Other;
-									break;
-								case 'comment':
-									tokenTypes[scope] = StandardTokenType.Comment;
-									break;
-							}
-						}
-					}
-
-					let validLanguageId: string | null = null;
-					if (grammar.language && this._languageService.isRegisteredLanguageId(grammar.language)) {
-						validLanguageId = grammar.language;
-					}
-
-					this._grammarDefinitions.push({
+					const grammarDefinition = {
 						location: grammarLocation,
-						language: validLanguageId ? validLanguageId : undefined,
-						scopeName: grammar.scopeName,
-						embeddedLanguages: embeddedLanguages,
-						tokenTypes: tokenTypes,
-						injectTo: grammar.injectTo,
-					});
+						...parseTextMateGrammar(grammar, this._languageService)
+					}
+					this._grammarDefinitions.push(grammarDefinition);
 
-					if (validLanguageId) {
-						this._tokenizersRegistrations.push(TokenizationRegistry.registerFactory(validLanguageId, this._createFactory(validLanguageId)));
+					if (grammarDefinition.language) {
+						this._tokenizersRegistrations.push(TokenizationRegistry.registerFactory(grammarDefinition.language, this._createFactory(grammarDefinition.language)));
 					}
 				}
 			}
