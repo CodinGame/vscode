@@ -16,12 +16,8 @@ declare namespace monaco {
 	export interface Environment {
 		globalAPI?: boolean;
 		baseUrl?: string;
-		getWorker?(workerId: string, label: string): Worker;
+		getWorker?(workerId: string, label: string): Promise<Worker> | Worker;
 		getWorkerUrl?(workerId: string, label: string): string;
-	}
-
-	export interface IDisposable {
-		dispose(): void;
 	}
 
 	export interface IEvent<T> {
@@ -38,6 +34,37 @@ declare namespace monaco {
 		dispose(): void;
 	}
 
+
+	export interface IDisposable {
+		dispose(): void;
+	}
+
+	export abstract class Disposable implements IDisposable {
+		static readonly None: any;
+		constructor();
+		dispose(): void;
+		protected _register<T extends IDisposable>(o: T): T;
+	}
+
+	export class DisposableStore implements IDisposable {
+		static DISABLE_DISPOSED_WARNING: boolean;
+		constructor();
+		/**
+		 * Dispose of all registered disposables and mark this object as disposed.
+		 *
+		 * Any future disposables added to this object will be disposed of on `add`.
+		 */
+		dispose(): void;
+		/**
+		 * Returns `true` if this object has been disposed
+		 */
+		get isDisposed(): boolean;
+		/**
+		 * Dispose of all registered disposables but do not mark this object as disposed.
+		 */
+		clear(): void;
+		add<T extends IDisposable>(o: T): T;
+	}
 
 	export enum MarkerTag {
 		Unnecessary = 1,
@@ -428,6 +455,26 @@ declare namespace monaco {
 		};
 	}
 
+	export class MarkdownString implements IMarkdownString {
+		value: string;
+		isTrusted?: boolean;
+		supportThemeIcons?: boolean;
+		supportHtml?: boolean;
+		constructor(value?: string, isTrustedOrOptions?: boolean | {
+			isTrusted?: boolean;
+			supportThemeIcons?: boolean;
+			supportHtml?: boolean;
+		});
+		appendText(value: string, newlineStyle?: MarkdownStringTextNewlineStyle): MarkdownString;
+		appendMarkdown(value: string): MarkdownString;
+		appendCodeblock(langId: string, code: string): MarkdownString;
+	}
+
+	export enum MarkdownStringTextNewlineStyle {
+		Paragraph = 0,
+		Break = 1
+	}
+
 	export interface IKeyboardEvent {
 		readonly _standardKeyboardEventBrand: true;
 		readonly browserEvent: KeyboardEvent;
@@ -459,6 +506,16 @@ declare namespace monaco {
 		readonly timestamp: number;
 		preventDefault(): void;
 		stopPropagation(): void;
+	}
+
+	export interface IMouseWheelEvent extends MouseEvent {
+		readonly wheelDelta: number;
+		readonly wheelDeltaX: number;
+		readonly wheelDeltaY: number;
+		readonly deltaX: number;
+		readonly deltaY: number;
+		readonly deltaZ: number;
+		readonly deltaMode: number;
 	}
 
 	export interface IScrollEvent {
@@ -858,6 +915,125 @@ declare namespace monaco {
 		constructor(offset: number, type: string, language: string);
 		toString(): string;
 	}
+
+	export class TokenizationResult {
+		_tokenizationResultBrand: void;
+		readonly tokens: Token[];
+		readonly endState: languages.IState;
+		constructor(tokens: Token[], endState: languages.IState);
+	}
+
+	export class EncodedTokenizationResult {
+		_encodedTokenizationResultBrand: void;
+		/**
+		 * The tokens in binary format. Each token occupies two array indices. For token i:
+		 *  - at offset 2*i => startIndex
+		 *  - at offset 2*i + 1 => metadata
+		 *
+		 */
+		readonly tokens: Uint32Array;
+		readonly endState: languages.IState;
+		constructor(tokens: Uint32Array, endState: languages.IState);
+	}
+
+
+	export enum LogLevel {
+		Trace = 0,
+		Debug = 1,
+		Info = 2,
+		Warning = 3,
+		Error = 4,
+		Critical = 5,
+		Off = 6
+	}
+
+	export interface ILogger extends IDisposable {
+		onDidChangeLogLevel: IEvent<LogLevel>;
+		getLevel(): LogLevel;
+		setLevel(level: LogLevel): void;
+		trace(message: string, ...args: any[]): void;
+		debug(message: string, ...args: any[]): void;
+		info(message: string, ...args: any[]): void;
+		warn(message: string, ...args: any[]): void;
+		error(message: string | Error, ...args: any[]): void;
+		critical(message: string | Error, ...args: any[]): void;
+		/**
+		 * An operation to flush the contents. Can be synchronous.
+		 */
+		flush(): void;
+	}
+
+	export interface ILogService extends ILogger {
+		readonly _serviceBrand: undefined;
+	}
+
+	export interface ILoggerOptions {
+		/**
+		 * Name of the logger.
+		 */
+		name?: string;
+		/**
+		 * Do not create rotating files if max size exceeds.
+		 */
+		donotRotate?: boolean;
+		/**
+		 * Do not use formatters.
+		 */
+		donotUseFormatters?: boolean;
+		/**
+		 * If set, logger logs the message always.
+		 */
+		always?: boolean;
+	}
+
+	export interface ILoggerService {
+		readonly _serviceBrand: undefined;
+		/**
+		 * Creates a logger, or gets one if it already exists.
+		 */
+		createLogger(file: Uri, options?: ILoggerOptions): ILogger;
+		/**
+		 * Gets an existing logger, if any.
+		 */
+		getLogger(file: Uri): ILogger | undefined;
+	}
+
+	export abstract class AbstractLogger extends Disposable {
+		readonly onDidChangeLogLevel: IEvent<LogLevel>;
+		setLevel(level: LogLevel): void;
+		getLevel(): LogLevel;
+	}
+
+	export class ConsoleLogger extends AbstractLogger implements ILogger {
+		constructor(logLevel?: LogLevel);
+		trace(message: string, ...args: any[]): void;
+		debug(message: string, ...args: any[]): void;
+		info(message: string, ...args: any[]): void;
+		warn(message: string | Error, ...args: any[]): void;
+		error(message: string, ...args: any[]): void;
+		critical(message: string, ...args: any[]): void;
+		dispose(): void;
+		flush(): void;
+	}
+
+	export class ErrorHandler {
+		constructor();
+		addListener(listener: ErrorListenerCallback): ErrorListenerUnbind;
+		setUnexpectedErrorHandler(newUnexpectedErrorHandler: (e: any) => void): void;
+		getUnexpectedErrorHandler(): (e: any) => void;
+		onUnexpectedError(e: any): void;
+		onUnexpectedExternalError(e: any): void;
+	}
+
+	export const errorHandler: ErrorHandler;
+
+	export interface ErrorListenerCallback {
+		(error: any): void;
+	}
+
+	export interface ErrorListenerUnbind {
+		(): void;
+	}
 }
 
 declare namespace monaco.editor {
@@ -991,7 +1167,7 @@ declare namespace monaco.editor {
 	/**
 	 * Define a new theme or update an existing theme.
 	 */
-	export function defineTheme(themeName: string, themeData: IStandaloneThemeData): void;
+	export function defineTheme(themeName: string, themeData: IStandaloneThemeData, semanticHighlighting?: boolean): void;
 
 	/**
 	 * Switches to a theme.
@@ -1008,7 +1184,13 @@ declare namespace monaco.editor {
 	 */
 	export function registerCommand(id: string, handler: (accessor: any, ...args: any[]) => void): IDisposable;
 
+	export const IStandaloneThemeService: extra.ServiceIdentifier<IStandaloneThemeService>;
+
 	export type BuiltinTheme = 'vs' | 'vs-dark' | 'hc-black';
+
+	export type IColors = {
+		[colorId: string]: string;
+	};
 
 	export interface IStandaloneThemeData {
 		base: BuiltinTheme;
@@ -1018,9 +1200,18 @@ declare namespace monaco.editor {
 		colors: IColors;
 	}
 
-	export type IColors = {
-		[colorId: string]: string;
-	};
+	export interface IStandaloneTheme extends IColorTheme {
+		themeName: string;
+	}
+
+	export interface IStandaloneThemeService extends IThemeService {
+		readonly _serviceBrand: undefined;
+		setTheme(themeName: string): void;
+		setAutoDetectHighContrast(autoDetectHighContrast: boolean): void;
+		defineTheme(themeName: string, themeData: IStandaloneThemeData, semanticHighlighting?: boolean): void;
+		getColorTheme(): IStandaloneTheme;
+		setColorMapOverride(colorMapOverride: Color[] | null): void;
+	}
 
 	export interface ITokenThemeRule {
 		token: string;
@@ -1073,6 +1264,233 @@ declare namespace monaco.editor {
 		keepIdleModels?: boolean;
 	}
 
+	export class CodeEditorWidget extends Disposable implements ICodeEditor {
+		readonly onDidDispose: IEvent<void>;
+		readonly onDidChangeModelContent: IEvent<IModelContentChangedEvent>;
+		readonly onDidChangeModelLanguage: IEvent<IModelLanguageChangedEvent>;
+		readonly onDidChangeModelLanguageConfiguration: IEvent<IModelLanguageConfigurationChangedEvent>;
+		readonly onDidChangeModelOptions: IEvent<IModelOptionsChangedEvent>;
+		readonly onDidChangeModelDecorations: IEvent<IModelDecorationsChangedEvent>;
+		readonly onDidChangeConfiguration: IEvent<ConfigurationChangedEvent>;
+		protected readonly _onDidChangeModel: Emitter<IModelChangedEvent>;
+		readonly onDidChangeModel: IEvent<IModelChangedEvent>;
+		readonly onDidChangeCursorPosition: IEvent<ICursorPositionChangedEvent>;
+		readonly onDidChangeCursorSelection: IEvent<ICursorSelectionChangedEvent>;
+		readonly onDidAttemptReadOnlyEdit: IEvent<void>;
+		readonly onDidLayoutChange: IEvent<EditorLayoutInfo>;
+		readonly onDidFocusEditorText: IEvent<void>;
+		readonly onDidBlurEditorText: IEvent<void>;
+		readonly onDidFocusEditorWidget: IEvent<void>;
+		readonly onDidBlurEditorWidget: IEvent<void>;
+		readonly onWillType: any;
+		readonly onDidType: any;
+		readonly onDidCompositionStart: any;
+		readonly onDidCompositionEnd: any;
+		readonly onDidPaste: any;
+		readonly onMouseUp: IEvent<IEditorMouseEvent>;
+		readonly onMouseDown: IEvent<IEditorMouseEvent>;
+		readonly onMouseDrag: IEvent<IEditorMouseEvent>;
+		readonly onMouseDrop: IEvent<IPartialEditorMouseEvent>;
+		readonly onMouseDropCanceled: IEvent<void>;
+		readonly onContextMenu: IEvent<IEditorMouseEvent>;
+		readonly onMouseMove: IEvent<IEditorMouseEvent>;
+		readonly onMouseLeave: IEvent<IPartialEditorMouseEvent>;
+		readonly onMouseWheel: IEvent<IMouseWheelEvent>;
+		readonly onKeyUp: IEvent<IKeyboardEvent>;
+		readonly onKeyDown: IEvent<IKeyboardEvent>;
+		readonly onDidContentSizeChange: IEvent<IContentSizeChangedEvent>;
+		readonly onDidScrollChange: IEvent<IScrollEvent>;
+		readonly onDidChangeViewZones: IEvent<void>;
+		readonly onDidChangeHiddenAreas: IEvent<void>;
+		get isSimpleWidget(): boolean;
+		protected _contributions: {
+			[key: string]: IEditorContribution;
+		};
+		protected _actions: {
+			[key: string]: IEditorAction;
+		};
+		protected readonly _instantiationService: extra.IInstantiationService;
+		protected readonly _contextKeyService: extra.IContextKeyService;
+		protected readonly _codeEditorService: extra.ICodeEditorService;
+		getId(): string;
+		getEditorType(): string;
+		dispose(): void;
+		invokeWithinContext<T>(fn: (accessor: extra.ServicesAccessor) => T): T;
+		updateOptions(newOptions: Readonly<IEditorOptions> | undefined): void;
+		getOptions(): IComputedEditorOptions;
+		getOption<T extends EditorOption>(id: T): FindComputedEditorOptionValueById<T>;
+		getRawOptions(): IEditorOptions;
+		getOverflowWidgetsDomNode(): HTMLElement | undefined;
+		getConfiguredWordAtPosition(position: Position): IWordAtPosition | null;
+		getValue(options?: {
+			preserveBOM: boolean;
+			lineEnding: string;
+		} | null): string;
+		setValue(newValue: string): void;
+		getModel(): ITextModel | null;
+		setModel(_model?: ITextModel | IDiffEditorModel | null): void;
+		getVisibleRanges(): Range[];
+		getVisibleRangesPlusViewportAboveBelow(): Range[];
+		getTopForLineNumber(lineNumber: number): number;
+		getTopForPosition(lineNumber: number, column: number): number;
+		setHiddenAreas(ranges: IRange[]): void;
+		getVisibleColumnFromPosition(rawPosition: IPosition): number;
+		getStatusbarColumn(rawPosition: IPosition): number;
+		getPosition(): Position | null;
+		setPosition(position: IPosition): void;
+		revealLine(lineNumber: number, scrollType?: ScrollType): void;
+		revealLineInCenter(lineNumber: number, scrollType?: ScrollType): void;
+		revealLineInCenterIfOutsideViewport(lineNumber: number, scrollType?: ScrollType): void;
+		revealLineNearTop(lineNumber: number, scrollType?: ScrollType): void;
+		revealPosition(position: IPosition, scrollType?: ScrollType): void;
+		revealPositionInCenter(position: IPosition, scrollType?: ScrollType): void;
+		revealPositionInCenterIfOutsideViewport(position: IPosition, scrollType?: ScrollType): void;
+		revealPositionNearTop(position: IPosition, scrollType?: ScrollType): void;
+		getSelection(): Selection | null;
+		getSelections(): Selection[] | null;
+		setSelection(range: IRange): void;
+		setSelection(editorRange: Range): void;
+		setSelection(selection: ISelection): void;
+		setSelection(editorSelection: Selection): void;
+		revealLines(startLineNumber: number, endLineNumber: number, scrollType?: ScrollType): void;
+		revealLinesInCenter(startLineNumber: number, endLineNumber: number, scrollType?: ScrollType): void;
+		revealLinesInCenterIfOutsideViewport(startLineNumber: number, endLineNumber: number, scrollType?: ScrollType): void;
+		revealLinesNearTop(startLineNumber: number, endLineNumber: number, scrollType?: ScrollType): void;
+		revealRange(range: IRange, scrollType?: ScrollType, revealVerticalInCenter?: boolean, revealHorizontal?: boolean): void;
+		revealRangeInCenter(range: IRange, scrollType?: ScrollType): void;
+		revealRangeInCenterIfOutsideViewport(range: IRange, scrollType?: ScrollType): void;
+		revealRangeNearTop(range: IRange, scrollType?: ScrollType): void;
+		revealRangeNearTopIfOutsideViewport(range: IRange, scrollType?: ScrollType): void;
+		revealRangeAtTop(range: IRange, scrollType?: ScrollType): void;
+		setSelections(ranges: readonly ISelection[], source?: string, reason?: any): void;
+		getContentWidth(): number;
+		getScrollWidth(): number;
+		getScrollLeft(): number;
+		getContentHeight(): number;
+		getScrollHeight(): number;
+		getScrollTop(): number;
+		setScrollLeft(newScrollLeft: number, scrollType?: ScrollType): void;
+		setScrollTop(newScrollTop: number, scrollType?: ScrollType): void;
+		setScrollPosition(position: INewScrollPosition, scrollType?: ScrollType): void;
+		saveViewState(): ICodeEditorViewState | null;
+		restoreViewState(s: IEditorViewState | null): void;
+		onVisible(): void;
+		onHide(): void;
+		getContribution<T extends IEditorContribution>(id: string): T | null;
+		getActions(): IEditorAction[];
+		getSupportedActions(): IEditorAction[];
+		getAction(id: string): IEditorAction;
+		trigger(source: string | null | undefined, handlerId: string, payload: any): void;
+		protected _triggerCommand(handlerId: string, payload: any): void;
+		pushUndoStop(): boolean;
+		popUndoStop(): boolean;
+		executeEdits(source: string | null | undefined, edits: IIdentifiedSingleEditOperation[], endCursorState?: ICursorStateComputer | Selection[]): boolean;
+		executeCommand(source: string | null | undefined, command: ICommand): void;
+		executeCommands(source: string | null | undefined, commands: ICommand[]): void;
+		getLineDecorations(lineNumber: number): IModelDecoration[] | null;
+		getDecorationsInRange(range: Range): IModelDecoration[] | null;
+		deltaDecorations(oldDecorations: string[], newDecorations: IModelDeltaDecoration[]): string[];
+		setDecorations(description: string, decorationTypeKey: string, decorationOptions: IDecorationOptions[]): void;
+		setDecorationsFast(decorationTypeKey: string, ranges: IRange[]): void;
+		removeDecorations(decorationTypeKey: string): void;
+		getLayoutInfo(): EditorLayoutInfo;
+		getContainerDomNode(): HTMLElement;
+		getDomNode(): HTMLElement | null;
+		delegateVerticalScrollbarMouseDown(browserEvent: IMouseEvent): void;
+		layout(dimension?: IDimension): void;
+		focus(): void;
+		hasTextFocus(): boolean;
+		hasWidgetFocus(): boolean;
+		addContentWidget(widget: IContentWidget): void;
+		layoutContentWidget(widget: IContentWidget): void;
+		removeContentWidget(widget: IContentWidget): void;
+		addOverlayWidget(widget: IOverlayWidget): void;
+		layoutOverlayWidget(widget: IOverlayWidget): void;
+		removeOverlayWidget(widget: IOverlayWidget): void;
+		changeViewZones(callback: (accessor: IViewZoneChangeAccessor) => void): void;
+		getTargetAtClientPoint(clientX: number, clientY: number): IMouseTarget | null;
+		getScrolledVisiblePosition(rawPosition: IPosition): {
+			top: number;
+			left: number;
+			height: number;
+		} | null;
+		getOffsetForColumn(lineNumber: number, column: number): number;
+		render(forceRedraw?: boolean): void;
+		applyFontInfo(target: HTMLElement): void;
+		setBanner(domNode: HTMLElement | null, domNodeHeight: number): void;
+		protected _attachModel(model: ITextModel | null): void;
+		protected _postDetachModelCleanup(detachedModel: ITextModel | null): void;
+		getTelemetryData(): {
+			[key: string]: any;
+		} | undefined;
+	}
+
+	export class DiffEditorWidget extends Disposable implements IDiffEditor {
+		static readonly ENTIRE_DIFF_OVERVIEW_WIDTH = 30;
+		readonly onDidDispose: IEvent<void>;
+		readonly onDidUpdateDiff: IEvent<void>;
+		readonly onDidContentSizeChange: IEvent<IContentSizeChangedEvent>;
+		protected readonly _containerDomElement: HTMLElement;
+		get ignoreTrimWhitespace(): boolean;
+		get maxComputationTime(): number;
+		getContentHeight(): number;
+		getViewWidth(): number;
+		hasWidgetFocus(): boolean;
+		diffReviewNext(): void;
+		diffReviewPrev(): void;
+		dispose(): void;
+		getId(): string;
+		getEditorType(): string;
+		getLineChanges(): ILineChange[] | null;
+		getOriginalEditor(): ICodeEditor;
+		getModifiedEditor(): ICodeEditor;
+		updateOptions(_newOptions: Readonly<IDiffEditorOptions>): void;
+		getModel(): IDiffEditorModel;
+		setModel(model: IDiffEditorModel | null): void;
+		getContainerDomNode(): HTMLElement;
+		getVisibleColumnFromPosition(position: IPosition): number;
+		getStatusbarColumn(position: IPosition): number;
+		getPosition(): Position | null;
+		setPosition(position: IPosition): void;
+		revealLine(lineNumber: number, scrollType?: ScrollType): void;
+		revealLineInCenter(lineNumber: number, scrollType?: ScrollType): void;
+		revealLineInCenterIfOutsideViewport(lineNumber: number, scrollType?: ScrollType): void;
+		revealLineNearTop(lineNumber: number, scrollType?: ScrollType): void;
+		revealPosition(position: IPosition, scrollType?: ScrollType): void;
+		revealPositionInCenter(position: IPosition, scrollType?: ScrollType): void;
+		revealPositionInCenterIfOutsideViewport(position: IPosition, scrollType?: ScrollType): void;
+		revealPositionNearTop(position: IPosition, scrollType?: ScrollType): void;
+		getSelection(): Selection | null;
+		getSelections(): Selection[] | null;
+		setSelection(range: IRange): void;
+		setSelection(editorRange: Range): void;
+		setSelection(selection: ISelection): void;
+		setSelection(editorSelection: Selection): void;
+		setSelections(ranges: readonly ISelection[]): void;
+		revealLines(startLineNumber: number, endLineNumber: number, scrollType?: ScrollType): void;
+		revealLinesInCenter(startLineNumber: number, endLineNumber: number, scrollType?: ScrollType): void;
+		revealLinesInCenterIfOutsideViewport(startLineNumber: number, endLineNumber: number, scrollType?: ScrollType): void;
+		revealLinesNearTop(startLineNumber: number, endLineNumber: number, scrollType?: ScrollType): void;
+		revealRange(range: IRange, scrollType?: ScrollType, revealVerticalInCenter?: boolean, revealHorizontal?: boolean): void;
+		revealRangeInCenter(range: IRange, scrollType?: ScrollType): void;
+		revealRangeInCenterIfOutsideViewport(range: IRange, scrollType?: ScrollType): void;
+		revealRangeNearTop(range: IRange, scrollType?: ScrollType): void;
+		revealRangeNearTopIfOutsideViewport(range: IRange, scrollType?: ScrollType): void;
+		revealRangeAtTop(range: IRange, scrollType?: ScrollType): void;
+		getSupportedActions(): IEditorAction[];
+		saveViewState(): IDiffEditorViewState;
+		restoreViewState(s: IDiffEditorViewState): void;
+		layout(dimension?: IDimension): void;
+		focus(): void;
+		hasTextFocus(): boolean;
+		onVisible(): void;
+		onHide(): void;
+		trigger(source: string | null | undefined, handlerId: string, payload: any): void;
+		doLayout(): void;
+		getDiffLineInformationForOriginal(lineNumber: number): IDiffLineInformation | null;
+		getDiffLineInformationForModified(lineNumber: number): IDiffLineInformation | null;
+	}
+
 	/**
 	 * Description of an action contribution
 	 */
@@ -1122,60 +1540,6 @@ declare namespace monaco.editor {
 	 * Options which apply for all editors.
 	 */
 	export interface IGlobalEditorOptions {
-		/**
-		 * The number of spaces a tab is equal to.
-		 * This setting is overridden based on the file contents when `detectIndentation` is on.
-		 * Defaults to 4.
-		 */
-		tabSize?: number;
-		/**
-		 * Insert spaces when pressing `Tab`.
-		 * This setting is overridden based on the file contents when `detectIndentation` is on.
-		 * Defaults to true.
-		 */
-		insertSpaces?: boolean;
-		/**
-		 * Controls whether `tabSize` and `insertSpaces` will be automatically detected when a file is opened based on the file contents.
-		 * Defaults to true.
-		 */
-		detectIndentation?: boolean;
-		/**
-		 * Remove trailing auto inserted whitespace.
-		 * Defaults to true.
-		 */
-		trimAutoWhitespace?: boolean;
-		/**
-		 * Special handling for large files to disable certain memory intensive features.
-		 * Defaults to true.
-		 */
-		largeFileOptimizations?: boolean;
-		/**
-		 * Controls whether completions should be computed based on words in the document.
-		 * Defaults to true.
-		 */
-		wordBasedSuggestions?: boolean;
-		/**
-		 * Controls whether word based completions should be included from opened documents of the same language or any language.
-		 */
-		wordBasedSuggestionsOnlySameLanguage?: boolean;
-		/**
-		 * Controls whether the semanticHighlighting is shown for the languages that support it.
-		 * true: semanticHighlighting is enabled for all themes
-		 * false: semanticHighlighting is disabled for all themes
-		 * 'configuredByTheme': semanticHighlighting is controlled by the current color theme's semanticHighlighting setting.
-		 * Defaults to 'byTheme'.
-		 */
-		'semanticHighlighting.enabled'?: true | false | 'configuredByTheme';
-		/**
-		 * Keep peek editors open even when double clicking their content or when hitting `Escape`.
-		 * Defaults to false.
-		 */
-		stablePeek?: boolean;
-		/**
-		 * Lines above this length will not be tokenized for performance reasons.
-		 * Defaults to 20000.
-		 */
-		maxTokenizationLineLength?: number;
 		/**
 		 * Theme to be used for rendering.
 		 * The current out-of-the-box available themes are: 'vs' (default), 'vs-dark', 'hc-black'.
@@ -1257,26 +1621,39 @@ declare namespace monaco.editor {
 
 	export interface IStandaloneCodeEditor extends ICodeEditor {
 		updateOptions(newOptions: IEditorOptions & IGlobalEditorOptions): void;
-		addCommand(keybinding: number, handler: ICommandHandler, context?: string): string | null;
-		createContextKey<T>(key: string, defaultValue: T): IContextKey<T>;
+		addCommand(keybinding: number, handler: extra.ICommandHandler, context?: string): string | null;
+		createContextKey<T>(key: string, defaultValue: T): extra.IContextKey<T>;
 		addAction(descriptor: IActionDescriptor): IDisposable;
 	}
 
 	export interface IStandaloneDiffEditor extends IDiffEditor {
-		addCommand(keybinding: number, handler: ICommandHandler, context?: string): string | null;
-		createContextKey<T>(key: string, defaultValue: T): IContextKey<T>;
+		addCommand(keybinding: number, handler: extra.ICommandHandler, context?: string): string | null;
+		createContextKey<T>(key: string, defaultValue: T): extra.IContextKey<T>;
 		addAction(descriptor: IActionDescriptor): IDisposable;
 		getOriginalEditor(): IStandaloneCodeEditor;
 		getModifiedEditor(): IStandaloneCodeEditor;
 	}
-	export interface ICommandHandler {
-		(...args: any[]): void;
+
+	/**
+	 * A code editor to be used both by the standalone editor and the standalone diff editor.
+	 */
+	export class StandaloneCodeEditor extends CodeEditorWidget implements IStandaloneCodeEditor {
+		readonly _standaloneKeybindingService: extra.StandaloneKeybindingService | null;
+		addCommand(keybinding: number, handler: extra.ICommandHandler, context?: string): string | null;
+		createContextKey<T>(key: string, defaultValue: T): extra.IContextKey<T>;
+		addAction(_descriptor: IActionDescriptor): IDisposable;
+		protected _triggerCommand(handlerId: string, payload: any): void;
 	}
 
-	export interface IContextKey<T> {
-		set(value: T): void;
-		reset(): void;
-		get(): T | undefined;
+	export class StandaloneDiffEditor extends DiffEditorWidget implements IStandaloneDiffEditor {
+		dispose(): void;
+		updateOptions(newOptions: Readonly<IDiffEditorOptions & IGlobalEditorOptions>): void;
+		protected _createInnerEditor(instantiationService: extra.IInstantiationService, container: HTMLElement, options: Readonly<IEditorOptions>): CodeEditorWidget;
+		getOriginalEditor(): IStandaloneCodeEditor;
+		getModifiedEditor(): IStandaloneCodeEditor;
+		addCommand(keybinding: number, handler: extra.ICommandHandler, context?: string): string | null;
+		createContextKey<T>(key: string, defaultValue: T): extra.IContextKey<T>;
+		addAction(descriptor: IActionDescriptor): IDisposable;
 	}
 
 	export interface IEditorOverrideServices {
@@ -1346,9 +1723,197 @@ declare namespace monaco.editor {
 		Hidden = 2,
 		Visible = 3
 	}
+	/**
+	 * Color scheme used by the OS and by color themes.
+	 */
+	export enum ColorScheme {
+		DARK = 'dark',
+		LIGHT = 'light',
+		HIGH_CONTRAST = 'hc'
+	}
+	export class RGBA {
+		_rgbaBrand: void;
+		/**
+		 * Red: integer in [0-255]
+		 */
+		readonly r: number;
+		/**
+		 * Green: integer in [0-255]
+		 */
+		readonly g: number;
+		/**
+		 * Blue: integer in [0-255]
+		 */
+		readonly b: number;
+		/**
+		 * Alpha: float in [0-1]
+		 */
+		readonly a: number;
+		constructor(r: number, g: number, b: number, a?: number);
+		static equals(a: RGBA, b: RGBA): boolean;
+	}
+
+	export class HSLA {
+		_hslaBrand: void;
+		/**
+		 * Hue: integer in [0, 360]
+		 */
+		readonly h: number;
+		/**
+		 * Saturation: float in [0, 1]
+		 */
+		readonly s: number;
+		/**
+		 * Luminosity: float in [0, 1]
+		 */
+		readonly l: number;
+		/**
+		 * Alpha: float in [0, 1]
+		 */
+		readonly a: number;
+		constructor(h: number, s: number, l: number, a: number);
+		static equals(a: HSLA, b: HSLA): boolean;
+		/**
+		 * Converts an RGB color value to HSL. Conversion formula
+		 * adapted from http://en.wikipedia.org/wiki/HSL_color_space.
+		 * Assumes r, g, and b are contained in the set [0, 255] and
+		 * returns h in the set [0, 360], s, and l in the set [0, 1].
+		 */
+		static fromRGBA(rgba: RGBA): HSLA;
+		/**
+		 * Converts an HSL color value to RGB. Conversion formula
+		 * adapted from http://en.wikipedia.org/wiki/HSL_color_space.
+		 * Assumes h in the set [0, 360] s, and l are contained in the set [0, 1] and
+		 * returns r, g, and b in the set [0, 255].
+		 */
+		static toRGBA(hsla: HSLA): RGBA;
+	}
+
+	export class HSVA {
+		_hsvaBrand: void;
+		/**
+		 * Hue: integer in [0, 360]
+		 */
+		readonly h: number;
+		/**
+		 * Saturation: float in [0, 1]
+		 */
+		readonly s: number;
+		/**
+		 * Value: float in [0, 1]
+		 */
+		readonly v: number;
+		/**
+		 * Alpha: float in [0, 1]
+		 */
+		readonly a: number;
+		constructor(h: number, s: number, v: number, a: number);
+		static equals(a: HSVA, b: HSVA): boolean;
+		static fromRGBA(rgba: RGBA): HSVA;
+		static toRGBA(hsva: HSVA): RGBA;
+	}
+
+	export class Color {
+		static fromHex(hex: string): Color;
+		readonly rgba: RGBA;
+		get hsla(): HSLA;
+		get hsva(): HSVA;
+		constructor(arg: RGBA | HSLA | HSVA);
+		equals(other: Color | null): boolean;
+		/**
+		 * http://www.w3.org/TR/WCAG20/#relativeluminancedef
+		 * Returns the number in the set [0, 1]. O => Darkest Black. 1 => Lightest white.
+		 */
+		getRelativeLuminance(): number;
+		/**
+		 * http://www.w3.org/TR/WCAG20/#contrast-ratiodef
+		 * Returns the contrast ration number in the set [1, 21].
+		 */
+		getContrastRatio(another: Color): number;
+		/**
+		 *	http://24ways.org/2010/calculating-color-contrast
+		 *  Return 'true' if darker color otherwise 'false'
+		 */
+		isDarker(): boolean;
+		/**
+		 *	http://24ways.org/2010/calculating-color-contrast
+		 *  Return 'true' if lighter color otherwise 'false'
+		 */
+		isLighter(): boolean;
+		isLighterThan(another: Color): boolean;
+		isDarkerThan(another: Color): boolean;
+		lighten(factor: number): Color;
+		darken(factor: number): Color;
+		transparent(factor: number): Color;
+		isTransparent(): boolean;
+		isOpaque(): boolean;
+		opposite(): Color;
+		blend(c: Color): Color;
+		makeOpaque(opaqueBackground: Color): Color;
+		flatten(...backgrounds: Color[]): Color;
+		toString(): string;
+		static getLighterColor(of: Color, relative: Color, factor?: number): Color;
+		static getDarkerColor(of: Color, relative: Color, factor?: number): Color;
+		static readonly white: Color;
+		static readonly black: Color;
+		static readonly red: Color;
+		static readonly blue: Color;
+		static readonly green: Color;
+		static readonly cyan: Color;
+		static readonly lightgrey: Color;
+		static readonly transparent: Color;
+	}
+
+	export type ColorIdentifier = string;
 
 	export interface ThemeColor {
 		id: string;
+	}
+
+	export namespace ThemeColor {
+	}
+
+	export interface ITokenStyle {
+		readonly foreground: number | undefined;
+		readonly bold: boolean | undefined;
+		readonly underline: boolean | undefined;
+		readonly strikethrough: boolean | undefined;
+		readonly italic: boolean | undefined;
+	}
+
+	export interface IColorTheme {
+		readonly type: ColorScheme;
+		readonly label: string;
+		/**
+		 * Resolves the color of the given color identifier. If the theme does not
+		 * specify the color, the default color is returned unless <code>useDefault</code> is set to false.
+		 * @param color the id of the color
+		 * @param useDefault specifies if the default color should be used. If not set, the default is used.
+		 */
+		getColor(color: ColorIdentifier, useDefault?: boolean): Color | undefined;
+		/**
+		 * Returns whether the theme defines a value for the color. If not, that means the
+		 * default color will be used.
+		 */
+		defines(color: ColorIdentifier): boolean;
+		/**
+		 * Returns the token style for a given classification. The result uses the <code>MetadataConsts</code> format
+		 */
+		getTokenStyleMetadata(type: string, modifiers: string[], modelLanguage: string): ITokenStyle | undefined;
+		/**
+		 * List of all colors used with tokens. <code>getTokenStyleMetadata</code> references the colors by index into this list.
+		 */
+		readonly tokenColorMap: string[];
+		/**
+		 * Defines whether semantic highlighting should be enabled for the theme.
+		 */
+		readonly semanticHighlighting: boolean;
+	}
+
+	export interface IThemeService {
+		readonly _serviceBrand: undefined;
+		getColorTheme(): IColorTheme;
+		readonly onDidColorThemeChange: IEvent<IColorTheme>;
 	}
 
 	/**
@@ -1690,6 +2255,18 @@ declare namespace monaco.editor {
 		readonly bracketPairColorizationOptions: BracketPairColorizationOptions;
 	}
 
+	export interface ITextModelCreationOptions {
+		tabSize: number;
+		indentSize: number;
+		insertSpaces: boolean;
+		detectIndentation: boolean;
+		trimAutoWhitespace: boolean;
+		defaultEOL: DefaultEndOfLine;
+		isForSimpleWidget: boolean;
+		largeFileOptimizations: boolean;
+		bracketPairColorizationOptions: BracketPairColorizationOptions;
+	}
+
 	export interface BracketPairColorizationOptions {
 		enabled: boolean;
 	}
@@ -1717,6 +2294,15 @@ declare namespace monaco.editor {
 		NeverGrowsWhenTypingAtEdges = 1,
 		GrowsOnlyWhenTypingBefore = 2,
 		GrowsOnlyWhenTypingAfter = 3
+	}
+
+	/**
+	 * Text snapshot that works like an iterator.
+	 * Will try to return chunks of roughly ~64KB size.
+	 * Will return null when finished.
+	 */
+	export interface ITextSnapshot {
+		read(): string | null;
 	}
 
 	/**
@@ -2516,6 +3102,80 @@ declare namespace monaco.editor {
 		restoreViewState?(state: any): void;
 	}
 
+	export interface IThemeDecorationRenderOptions {
+		backgroundColor?: string | ThemeColor;
+		outline?: string;
+		outlineColor?: string | ThemeColor;
+		outlineStyle?: string;
+		outlineWidth?: string;
+		border?: string;
+		borderColor?: string | ThemeColor;
+		borderRadius?: string;
+		borderSpacing?: string;
+		borderStyle?: string;
+		borderWidth?: string;
+		fontStyle?: string;
+		fontWeight?: string;
+		fontSize?: string;
+		textDecoration?: string;
+		cursor?: string;
+		color?: string | ThemeColor;
+		opacity?: string;
+		letterSpacing?: string;
+		gutterIconPath?: UriComponents;
+		gutterIconSize?: string;
+		overviewRulerColor?: string | ThemeColor;
+		/**
+		 * @deprecated
+		 */
+		before?: IContentDecorationRenderOptions;
+		/**
+		 * @deprecated
+		 */
+		after?: IContentDecorationRenderOptions;
+		/**
+		 * @deprecated
+		 */
+		beforeInjectedText?: IContentDecorationRenderOptions & {
+			affectsLetterSpacing?: boolean;
+		};
+		/**
+		 * @deprecated
+		 */
+		afterInjectedText?: IContentDecorationRenderOptions & {
+			affectsLetterSpacing?: boolean;
+		};
+	}
+
+	export interface IContentDecorationRenderOptions {
+		contentText?: string;
+		contentIconPath?: UriComponents;
+		border?: string;
+		borderColor?: string | ThemeColor;
+		borderRadius?: string;
+		fontStyle?: string;
+		fontWeight?: string;
+		fontSize?: string;
+		fontFamily?: string;
+		textDecoration?: string;
+		color?: string | ThemeColor;
+		backgroundColor?: string | ThemeColor;
+		opacity?: string;
+		verticalAlign?: string;
+		margin?: string;
+		padding?: string;
+		width?: string;
+		height?: string;
+	}
+
+	export interface IDecorationRenderOptions extends IThemeDecorationRenderOptions {
+		isWholeLine?: boolean;
+		rangeBehavior?: TrackedRangeStickiness;
+		overviewRulerLane?: OverviewRulerLane;
+		light?: IThemeDecorationRenderOptions;
+		dark?: IThemeDecorationRenderOptions;
+	}
+
 	/**
 	 * The type of the `IEditor`.
 	 */
@@ -2523,6 +3183,13 @@ declare namespace monaco.editor {
 		ICodeEditor: string;
 		IDiffEditor: string;
 	};
+
+	export interface PastePayload {
+		text: string;
+		pasteOnNewLine: boolean;
+		multicursorText: string[] | null;
+		mode: string | null;
+	}
 
 	/**
 	 * An event describing that the current language associated with a model has changed.
@@ -5195,6 +5862,10 @@ declare namespace monaco.editor {
 		 */
 		getTopForPosition(lineNumber: number, column: number): number;
 		/**
+		 * Set the model ranges that will be hidden in the view.
+		 */
+		setHiddenAreas(ranges: IRange[]): void;
+		/**
 		 * Returns the editor's container dom node
 		 */
 		getContainerDomNode(): HTMLElement;
@@ -5393,6 +6064,10 @@ declare namespace monaco.languages {
 	 */
 	export function setLanguageConfiguration(languageId: string, configuration: LanguageConfiguration): IDisposable;
 
+	export function adaptTokenize(language: string, actual: {
+		tokenize(line: string, state: IState): ILineTokens;
+	}, line: string, state: IState): TokenizationResult;
+
 	/**
 	 * A token.
 	 */
@@ -5507,6 +6182,16 @@ declare namespace monaco.languages {
 	 * or `registerDocumentRangeSemanticTokensProvider`.
 	 */
 	export function setTokensProvider(languageId: string, provider: TokensProvider | EncodedTokensProvider | Thenable<TokensProvider | EncodedTokensProvider>): IDisposable;
+
+	/**
+	 * Set the tokenization support for a language (manual implementation).
+	 */
+	export function setTokenizationSupport(languageId: string, support: ITokenizationSupport): any;
+
+	/**
+	 * Set the tokenization support factory for a language (manual implementation).
+	 */
+	export function setTokenizationSupportFactory(languageId: string, factory: ITokenizationSupportFactory): any;
 
 	/**
 	 * Set the tokens provider for a language (monarch implementation). This tokenizer will be exclusive
@@ -5917,1183 +6602,1687 @@ declare namespace monaco.languages {
 		removeText?: number;
 	}
 
-	/**
-	 * The state of the tokenizer between two lines.
-	 * It is useful to store flags such as in multiline comment, etc.
-	 * The model will clone the previous line's state and pass it in to tokenize the next line.
-	 */
-	export interface IState {
-		clone(): IState;
-		equals(other: IState): boolean;
+	export class StandardAutoClosingPairConditional {
+		readonly open: string;
+		readonly close: string;
+		constructor(source: IAutoClosingPairConditional);
+		isOK(standardToken: StandardTokenType): boolean;
+		shouldAutoClose(context: ScopedLineTokens, column: number): boolean;
+		/**
+		 * Find a character in the range [0-9a-zA-Z] that does not appear in the open or close
+		 */
+		findNeutralCharacter(): string | null;
+	}
+
+	export class AutoClosingPairs {
+		/** Key is first character of open */
+		readonly autoClosingPairsOpenByStart: Map<string, StandardAutoClosingPairConditional[]>;
+		/** Key is last character of open */
+		readonly autoClosingPairsOpenByEnd: Map<string, StandardAutoClosingPairConditional[]>;
+		/** Key is first character of close */
+		readonly autoClosingPairsCloseByStart: Map<string, StandardAutoClosingPairConditional[]>;
+		/** Key is last character of close */
+		readonly autoClosingPairsCloseByEnd: Map<string, StandardAutoClosingPairConditional[]>;
+		/** Key is close. Only has pairs that are a single character */
+		readonly autoClosingPairsCloseSingleChar: Map<string, StandardAutoClosingPairConditional[]>;
+		constructor(autoClosingPairs: StandardAutoClosingPairConditional[]);
 	}
 
 	/**
-	 * A provider result represents the values a provider, like the {@link HoverProvider},
-	 * may return. For once this is the actual result type `T`, like `Hover`, or a thenable that resolves
-	 * to that type `T`. In addition, `null` and `undefined` can be returned - either directly or from a
-	 * thenable.
+	 * Open ended enum at runtime
 	 */
-	export type ProviderResult<T> = T | undefined | null | Thenable<T | undefined | null>;
+		export enum LanguageId {
+			Null = 0,
+			PlainText = 1
+		}
 
-	/**
-	 * A hover represents additional information for a symbol or word. Hovers are
-	 * rendered in a tooltip-like widget.
-	 */
-	export interface Hover {
 		/**
-		 * The contents of this hover.
+		 * Open ended enum at runtime
 		 */
-		contents: IMarkdownString[];
-		/**
-		 * The range to which this hover applies. When missing, the
-		 * editor will use the range at the current position or the
-		 * current position itself.
-		 */
-		range?: IRange;
-	}
+		export enum ColorId {
+			None = 0,
+			DefaultForeground = 1,
+			DefaultBackground = 2
+		}
 
-	/**
-	 * The hover provider interface defines the contract between extensions and
-	 * the [hover](https://code.visualstudio.com/docs/editor/intellisense)-feature.
-	 */
-	export interface HoverProvider {
 		/**
-		 * Provide a hover for the given position and document. Multiple hovers at the same
-		 * position will be merged by the editor. A hover can have a range which defaults
-		 * to the word range at the position when omitted.
+		 * A standard token type.
 		 */
-		provideHover(model: editor.ITextModel, position: Position, token: CancellationToken): ProviderResult<Hover>;
-	}
+		export enum StandardTokenType {
+			Other = 0,
+			Comment = 1,
+			String = 2,
+			RegEx = 3
+		}
 
-	export enum CompletionItemKind {
-		Method = 0,
-		Function = 1,
-		Constructor = 2,
-		Field = 3,
-		Variable = 4,
-		Class = 5,
-		Struct = 6,
-		Interface = 7,
-		Module = 8,
-		Property = 9,
-		Event = 10,
-		Operator = 11,
-		Unit = 12,
-		Value = 13,
-		Constant = 14,
-		Enum = 15,
-		EnumMember = 16,
-		Keyword = 17,
-		Text = 18,
-		Color = 19,
-		File = 20,
-		Reference = 21,
-		Customcolor = 22,
-		Folder = 23,
-		TypeParameter = 24,
-		User = 25,
-		Issue = 26,
-		Snippet = 27
-	}
+		export interface ITokenPresentation {
+			foreground: ColorId;
+			italic: boolean;
+			bold: boolean;
+			underline: boolean;
+			strikethrough: boolean;
+		}
 
-	export interface CompletionItemLabel {
-		label: string;
-		detail?: string;
-		description?: string;
-	}
+		export interface ILanguageIdCodec {
+			encodeLanguageId(languageId: string): LanguageId;
+			decodeLanguageId(languageId: LanguageId): string;
+		}
 
-	export enum CompletionItemTag {
-		Deprecated = 1
-	}
+		export class TokenizationResult {
+			_tokenizationResultBrand: void;
+			readonly tokens: Token[];
+			readonly endState: IState;
+			constructor(tokens: Token[], endState: IState);
+		}
 
-	export enum CompletionItemInsertTextRule {
-		/**
-		 * Adjust whitespace/indentation of multiline insert texts to
-		 * match the current line indentation.
-		 */
-		KeepWhitespace = 1,
-		/**
-		 * `insertText` is a snippet.
-		 */
-		InsertAsSnippet = 4
-	}
+		export class EncodedTokenizationResult {
+			_encodedTokenizationResultBrand: void;
+			/**
+			 * The tokens in binary format. Each token occupies two array indices. For token i:
+			 *  - at offset 2*i => startIndex
+			 *  - at offset 2*i + 1 => metadata
+			 *
+			 */
+			readonly tokens: Uint32Array;
+			readonly endState: IState;
+			constructor(tokens: Uint32Array, endState: IState);
+		}
 
-	export interface CompletionItemRanges {
-		insert: IRange;
-		replace: IRange;
-	}
+		export interface ITokenizationSupport {
+			getInitialState(): IState;
+			tokenize(line: string, hasEOL: boolean, state: IState): TokenizationResult;
+			tokenizeEncoded(line: string, hasEOL: boolean, state: IState): EncodedTokenizationResult;
+		}
 
-	/**
-	 * A completion item represents a text snippet that is
-	 * proposed to complete text that is being typed.
-	 */
-	export interface CompletionItem {
 		/**
-		 * The label of this completion item. By default
-		 * this is also the text that is inserted when selecting
-		 * this completion.
+		 * The state of the tokenizer between two lines.
+		 * It is useful to store flags such as in multiline comment, etc.
+		 * The model will clone the previous line's state and pass it in to tokenize the next line.
 		 */
-		label: string | CompletionItemLabel;
+		export interface IState {
+			clone(): IState;
+			equals(other: IState): boolean;
+		}
+
 		/**
-		 * The kind of this completion item. Based on the kind
-		 * an icon is chosen by the editor.
+		 * A provider result represents the values a provider, like the {@link HoverProvider},
+		 * may return. For once this is the actual result type `T`, like `Hover`, or a thenable that resolves
+		 * to that type `T`. In addition, `null` and `undefined` can be returned - either directly or from a
+		 * thenable.
 		 */
-		kind: CompletionItemKind;
+		export type ProviderResult<T> = T | undefined | null | Thenable<T | undefined | null>;
+
 		/**
-		 * A modifier to the `kind` which affect how the item
-		 * is rendered, e.g. Deprecated is rendered with a strikeout
+		 * A hover represents additional information for a symbol or word. Hovers are
+		 * rendered in a tooltip-like widget.
 		 */
-		tags?: ReadonlyArray<CompletionItemTag>;
+		export interface Hover {
+			/**
+			 * The contents of this hover.
+			 */
+			contents: IMarkdownString[];
+			/**
+			 * The range to which this hover applies. When missing, the
+			 * editor will use the range at the current position or the
+			 * current position itself.
+			 */
+			range?: IRange;
+		}
+
 		/**
-		 * A human-readable string with additional information
-		 * about this item, like type or symbol information.
+		 * The hover provider interface defines the contract between extensions and
+		 * the [hover](https://code.visualstudio.com/docs/editor/intellisense)-feature.
 		 */
-		detail?: string;
+		export interface HoverProvider {
+			/**
+			 * Provide a hover for the given position and document. Multiple hovers at the same
+			 * position will be merged by the editor. A hover can have a range which defaults
+			 * to the word range at the position when omitted.
+			 */
+			provideHover(model: editor.ITextModel, position: Position, token: CancellationToken): ProviderResult<Hover>;
+		}
+
+		export enum CompletionItemKind {
+			Method = 0,
+			Function = 1,
+			Constructor = 2,
+			Field = 3,
+			Variable = 4,
+			Class = 5,
+			Struct = 6,
+			Interface = 7,
+			Module = 8,
+			Property = 9,
+			Event = 10,
+			Operator = 11,
+			Unit = 12,
+			Value = 13,
+			Constant = 14,
+			Enum = 15,
+			EnumMember = 16,
+			Keyword = 17,
+			Text = 18,
+			Color = 19,
+			File = 20,
+			Reference = 21,
+			Customcolor = 22,
+			Folder = 23,
+			TypeParameter = 24,
+			User = 25,
+			Issue = 26,
+			Snippet = 27
+		}
+
+		export interface CompletionItemLabel {
+			label: string;
+			detail?: string;
+			description?: string;
+		}
+
+		export enum CompletionItemTag {
+			Deprecated = 1
+		}
+
+		export enum CompletionItemInsertTextRule {
+			/**
+			 * Adjust whitespace/indentation of multiline insert texts to
+			 * match the current line indentation.
+			 */
+			KeepWhitespace = 1,
+			/**
+			 * `insertText` is a snippet.
+			 */
+			InsertAsSnippet = 4
+		}
+
+		export interface CompletionItemRanges {
+			insert: IRange;
+			replace: IRange;
+		}
+
 		/**
-		 * A human-readable string that represents a doc-comment.
+		 * A completion item represents a text snippet that is
+		 * proposed to complete text that is being typed.
 		 */
-		documentation?: string | IMarkdownString;
+		export interface CompletionItem {
+			/**
+			 * The label of this completion item. By default
+			 * this is also the text that is inserted when selecting
+			 * this completion.
+			 */
+			label: string | CompletionItemLabel;
+			/**
+			 * The kind of this completion item. Based on the kind
+			 * an icon is chosen by the editor.
+			 */
+			kind: CompletionItemKind;
+			/**
+			 * A modifier to the `kind` which affect how the item
+			 * is rendered, e.g. Deprecated is rendered with a strikeout
+			 */
+			tags?: ReadonlyArray<CompletionItemTag>;
+			/**
+			 * A human-readable string with additional information
+			 * about this item, like type or symbol information.
+			 */
+			detail?: string;
+			/**
+			 * A human-readable string that represents a doc-comment.
+			 */
+			documentation?: string | IMarkdownString;
+			/**
+			 * A string that should be used when comparing this item
+			 * with other items. When `falsy` the {@link CompletionItem.label label}
+			 * is used.
+			 */
+			sortText?: string;
+			/**
+			 * A string that should be used when filtering a set of
+			 * completion items. When `falsy` the {@link CompletionItem.label label}
+			 * is used.
+			 */
+			filterText?: string;
+			/**
+			 * Select this item when showing. *Note* that only one completion item can be selected and
+			 * that the editor decides which item that is. The rule is that the *first* item of those
+			 * that match best is selected.
+			 */
+			preselect?: boolean;
+			/**
+			 * A string or snippet that should be inserted in a document when selecting
+			 * this completion.
+			 */
+			insertText: string;
+			/**
+			 * Additional rules (as bitmask) that should be applied when inserting
+			 * this completion.
+			 */
+			insertTextRules?: CompletionItemInsertTextRule;
+			/**
+			 * A range of text that should be replaced by this completion item.
+			 *
+			 * Defaults to a range from the start of the {@link TextDocument.getWordRangeAtPosition current word} to the
+			 * current position.
+			 *
+			 * *Note:* The range must be a {@link Range.isSingleLine single line} and it must
+			 * {@link Range.contains contain} the position at which completion has been {@link CompletionItemProvider.provideCompletionItems requested}.
+			 */
+			range: IRange | CompletionItemRanges;
+			/**
+			 * An optional set of characters that when pressed while this completion is active will accept it first and
+			 * then type that character. *Note* that all commit characters should have `length=1` and that superfluous
+			 * characters will be ignored.
+			 */
+			commitCharacters?: string[];
+			/**
+			 * An optional array of additional text edits that are applied when
+			 * selecting this completion. Edits must not overlap with the main edit
+			 * nor with themselves.
+			 */
+			additionalTextEdits?: editor.ISingleEditOperation[];
+			/**
+			 * A command that should be run upon acceptance of this item.
+			 */
+			command?: Command;
+		}
+
+		export interface CompletionList {
+			suggestions: CompletionItem[];
+			incomplete?: boolean;
+			dispose?(): void;
+		}
+
 		/**
-		 * A string that should be used when comparing this item
-		 * with other items. When `falsy` the {@link CompletionItem.label label}
-		 * is used.
+		 * How a suggest provider was triggered.
 		 */
-		sortText?: string;
+		export enum CompletionTriggerKind {
+			Invoke = 0,
+			TriggerCharacter = 1,
+			TriggerForIncompleteCompletions = 2
+		}
+
 		/**
-		 * A string that should be used when filtering a set of
-		 * completion items. When `falsy` the {@link CompletionItem.label label}
-		 * is used.
+		 * Contains additional information about the context in which
+		 * {@link CompletionItemProvider.provideCompletionItems completion provider} is triggered.
 		 */
-		filterText?: string;
+		export interface CompletionContext {
+			/**
+			 * How the completion was triggered.
+			 */
+			triggerKind: CompletionTriggerKind;
+			/**
+			 * Character that triggered the completion item provider.
+			 *
+			 * `undefined` if provider was not triggered by a character.
+			 */
+			triggerCharacter?: string;
+		}
+
 		/**
-		 * Select this item when showing. *Note* that only one completion item can be selected and
-		 * that the editor decides which item that is. The rule is that the *first* item of those
-		 * that match best is selected.
-		 */
-		preselect?: boolean;
-		/**
-		 * A string or snippet that should be inserted in a document when selecting
-		 * this completion.
-		 */
-		insertText: string;
-		/**
-		 * Additional rules (as bitmask) that should be applied when inserting
-		 * this completion.
-		 */
-		insertTextRules?: CompletionItemInsertTextRule;
-		/**
-		 * A range of text that should be replaced by this completion item.
+		 * The completion item provider interface defines the contract between extensions and
+		 * the [IntelliSense](https://code.visualstudio.com/docs/editor/intellisense).
 		 *
-		 * Defaults to a range from the start of the {@link TextDocument.getWordRangeAtPosition current word} to the
-		 * current position.
-		 *
-		 * *Note:* The range must be a {@link Range.isSingleLine single line} and it must
-		 * {@link Range.contains contain} the position at which completion has been {@link CompletionItemProvider.provideCompletionItems requested}.
+		 * When computing *complete* completion items is expensive, providers can optionally implement
+		 * the `resolveCompletionItem`-function. In that case it is enough to return completion
+		 * items with a {@link CompletionItem.label label} from the
+		 * {@link CompletionItemProvider.provideCompletionItems provideCompletionItems}-function. Subsequently,
+		 * when a completion item is shown in the UI and gains focus this provider is asked to resolve
+		 * the item, like adding {@link CompletionItem.documentation doc-comment} or {@link CompletionItem.detail details}.
 		 */
-		range: IRange | CompletionItemRanges;
-		/**
-		 * An optional set of characters that when pressed while this completion is active will accept it first and
-		 * then type that character. *Note* that all commit characters should have `length=1` and that superfluous
-		 * characters will be ignored.
-		 */
-		commitCharacters?: string[];
-		/**
-		 * An optional array of additional text edits that are applied when
-		 * selecting this completion. Edits must not overlap with the main edit
-		 * nor with themselves.
-		 */
-		additionalTextEdits?: editor.ISingleEditOperation[];
-		/**
-		 * A command that should be run upon acceptance of this item.
-		 */
-		command?: Command;
-	}
+		export interface CompletionItemProvider {
+			triggerCharacters?: string[];
+			/**
+			 * Provide completion items for the given position and document.
+			 */
+			provideCompletionItems(model: editor.ITextModel, position: Position, context: CompletionContext, token: CancellationToken): ProviderResult<CompletionList>;
+			/**
+			 * Given a completion item fill in more data, like {@link CompletionItem.documentation doc-comment}
+			 * or {@link CompletionItem.detail details}.
+			 *
+			 * The editor will only resolve a completion item once.
+			 */
+			resolveCompletionItem?(item: CompletionItem, token: CancellationToken): ProviderResult<CompletionItem>;
+		}
 
-	export interface CompletionList {
-		suggestions: CompletionItem[];
-		incomplete?: boolean;
-		dispose?(): void;
-	}
-
-	/**
-	 * How a suggest provider was triggered.
-	 */
-	export enum CompletionTriggerKind {
-		Invoke = 0,
-		TriggerCharacter = 1,
-		TriggerForIncompleteCompletions = 2
-	}
-
-	/**
-	 * Contains additional information about the context in which
-	 * {@link CompletionItemProvider.provideCompletionItems completion provider} is triggered.
-	 */
-	export interface CompletionContext {
 		/**
-		 * How the completion was triggered.
+		 * How an {@link InlineCompletionsProvider inline completion provider} was triggered.
 		 */
-		triggerKind: CompletionTriggerKind;
-		/**
-		 * Character that triggered the completion item provider.
-		 *
-		 * `undefined` if provider was not triggered by a character.
-		 */
-		triggerCharacter?: string;
-	}
+		export enum InlineCompletionTriggerKind {
+			/**
+			 * Completion was triggered automatically while editing.
+			 * It is sufficient to return a single completion item in this case.
+			 */
+			Automatic = 0,
+			/**
+			 * Completion was triggered explicitly by a user gesture.
+			 * Return multiple completion items to enable cycling through them.
+			 */
+			Explicit = 1
+		}
 
-	/**
-	 * The completion item provider interface defines the contract between extensions and
-	 * the [IntelliSense](https://code.visualstudio.com/docs/editor/intellisense).
-	 *
-	 * When computing *complete* completion items is expensive, providers can optionally implement
-	 * the `resolveCompletionItem`-function. In that case it is enough to return completion
-	 * items with a {@link CompletionItem.label label} from the
-	 * {@link CompletionItemProvider.provideCompletionItems provideCompletionItems}-function. Subsequently,
-	 * when a completion item is shown in the UI and gains focus this provider is asked to resolve
-	 * the item, like adding {@link CompletionItem.documentation doc-comment} or {@link CompletionItem.detail details}.
-	 */
-	export interface CompletionItemProvider {
-		triggerCharacters?: string[];
-		/**
-		 * Provide completion items for the given position and document.
-		 */
-		provideCompletionItems(model: editor.ITextModel, position: Position, context: CompletionContext, token: CancellationToken): ProviderResult<CompletionList>;
-		/**
-		 * Given a completion item fill in more data, like {@link CompletionItem.documentation doc-comment}
-		 * or {@link CompletionItem.detail details}.
-		 *
-		 * The editor will only resolve a completion item once.
-		 */
-		resolveCompletionItem?(item: CompletionItem, token: CancellationToken): ProviderResult<CompletionItem>;
-	}
+		export interface InlineCompletionContext {
+			/**
+			 * How the completion was triggered.
+			 */
+			readonly triggerKind: InlineCompletionTriggerKind;
+			readonly selectedSuggestionInfo: SelectedSuggestionInfo | undefined;
+		}
 
-	/**
-	 * How an {@link InlineCompletionsProvider inline completion provider} was triggered.
-	 */
-	export enum InlineCompletionTriggerKind {
-		/**
-		 * Completion was triggered automatically while editing.
-		 * It is sufficient to return a single completion item in this case.
-		 */
-		Automatic = 0,
-		/**
-		 * Completion was triggered explicitly by a user gesture.
-		 * Return multiple completion items to enable cycling through them.
-		 */
-		Explicit = 1
-	}
+		export interface SelectedSuggestionInfo {
+			range: IRange;
+			text: string;
+			isSnippetText: boolean;
+			completionKind: CompletionItemKind;
+		}
 
-	export interface InlineCompletionContext {
+		export interface InlineCompletion {
+			/**
+			 * The text to insert.
+			 * If the text contains a line break, the range must end at the end of a line.
+			 * If existing text should be replaced, the existing text must be a prefix of the text to insert.
+			*/
+			readonly text: string;
+			/**
+			 * The range to replace.
+			 * Must begin and end on the same line.
+			*/
+			readonly range?: IRange;
+			readonly command?: Command;
+			/**
+			 * If set to `true`, unopened closing brackets are removed and unclosed opening brackets are closed.
+			 * Defaults to `false`.
+			*/
+			readonly completeBracketPairs?: boolean;
+		}
+
+		export interface InlineCompletions<TItem extends InlineCompletion = InlineCompletion> {
+			readonly items: readonly TItem[];
+		}
+
+		export interface InlineCompletionsProvider<T extends InlineCompletions = InlineCompletions> {
+			provideInlineCompletions(model: editor.ITextModel, position: Position, context: InlineCompletionContext, token: CancellationToken): ProviderResult<T>;
+			/**
+			 * Will be called when an item is shown.
+			*/
+			handleItemDidShow?(completions: T, item: T['items'][number]): void;
+			/**
+			 * Will be called when a completions list is no longer in use and can be garbage-collected.
+			*/
+			freeInlineCompletions(completions: T): void;
+		}
+
+		export interface CodeAction {
+			title: string;
+			command?: Command;
+			edit?: WorkspaceEdit;
+			diagnostics?: editor.IMarkerData[];
+			kind?: string;
+			isPreferred?: boolean;
+			disabled?: string;
+		}
+
+		export interface CodeActionList extends IDisposable {
+			readonly actions: ReadonlyArray<CodeAction>;
+		}
+
 		/**
-		 * How the completion was triggered.
+		 * Represents a parameter of a callable-signature. A parameter can
+		 * have a label and a doc-comment.
 		 */
-		readonly triggerKind: InlineCompletionTriggerKind;
-		readonly selectedSuggestionInfo: SelectedSuggestionInfo | undefined;
-	}
+		export interface ParameterInformation {
+			/**
+			 * The label of this signature. Will be shown in
+			 * the UI.
+			 */
+			label: string | [number, number];
+			/**
+			 * The human-readable doc-comment of this signature. Will be shown
+			 * in the UI but can be omitted.
+			 */
+			documentation?: string | IMarkdownString;
+		}
 
-	export interface SelectedSuggestionInfo {
-		range: IRange;
-		text: string;
-		isSnippetText: boolean;
-		completionKind: CompletionItemKind;
-	}
-
-	export interface InlineCompletion {
 		/**
-		 * The text to insert.
-		 * If the text contains a line break, the range must end at the end of a line.
-		 * If existing text should be replaced, the existing text must be a prefix of the text to insert.
+		 * Represents the signature of something callable. A signature
+		 * can have a label, like a function-name, a doc-comment, and
+		 * a set of parameters.
+		 */
+		export interface SignatureInformation {
+			/**
+			 * The label of this signature. Will be shown in
+			 * the UI.
+			 */
+			label: string;
+			/**
+			 * The human-readable doc-comment of this signature. Will be shown
+			 * in the UI but can be omitted.
+			 */
+			documentation?: string | IMarkdownString;
+			/**
+			 * The parameters of this signature.
+			 */
+			parameters: ParameterInformation[];
+			/**
+			 * Index of the active parameter.
+			 *
+			 * If provided, this is used in place of `SignatureHelp.activeSignature`.
+			 */
+			activeParameter?: number;
+		}
+
+		/**
+		 * Signature help represents the signature of something
+		 * callable. There can be multiple signatures but only one
+		 * active and only one active parameter.
+		 */
+		export interface SignatureHelp {
+			/**
+			 * One or more signatures.
+			 */
+			signatures: SignatureInformation[];
+			/**
+			 * The active signature.
+			 */
+			activeSignature: number;
+			/**
+			 * The active parameter of the active signature.
+			 */
+			activeParameter: number;
+		}
+
+		export interface SignatureHelpResult extends IDisposable {
+			value: SignatureHelp;
+		}
+
+		export enum SignatureHelpTriggerKind {
+			Invoke = 1,
+			TriggerCharacter = 2,
+			ContentChange = 3
+		}
+
+		export interface SignatureHelpContext {
+			readonly triggerKind: SignatureHelpTriggerKind;
+			readonly triggerCharacter?: string;
+			readonly isRetrigger: boolean;
+			readonly activeSignatureHelp?: SignatureHelp;
+		}
+
+		/**
+		 * The signature help provider interface defines the contract between extensions and
+		 * the [parameter hints](https://code.visualstudio.com/docs/editor/intellisense)-feature.
+		 */
+		export interface SignatureHelpProvider {
+			readonly signatureHelpTriggerCharacters?: ReadonlyArray<string>;
+			readonly signatureHelpRetriggerCharacters?: ReadonlyArray<string>;
+			/**
+			 * Provide help for the signature at the given position and document.
+			 */
+			provideSignatureHelp(model: editor.ITextModel, position: Position, token: CancellationToken, context: SignatureHelpContext): ProviderResult<SignatureHelpResult>;
+		}
+
+		/**
+		 * A document highlight kind.
+		 */
+		export enum DocumentHighlightKind {
+			/**
+			 * A textual occurrence.
+			 */
+			Text = 0,
+			/**
+			 * Read-access of a symbol, like reading a variable.
+			 */
+			Read = 1,
+			/**
+			 * Write-access of a symbol, like writing to a variable.
+			 */
+			Write = 2
+		}
+
+		/**
+		 * A document highlight is a range inside a text document which deserves
+		 * special attention. Usually a document highlight is visualized by changing
+		 * the background color of its range.
+		 */
+		export interface DocumentHighlight {
+			/**
+			 * The range this highlight applies to.
+			 */
+			range: IRange;
+			/**
+			 * The highlight kind, default is {@link DocumentHighlightKind.Text text}.
+			 */
+			kind?: DocumentHighlightKind;
+		}
+
+		/**
+		 * The document highlight provider interface defines the contract between extensions and
+		 * the word-highlight-feature.
+		 */
+		export interface DocumentHighlightProvider {
+			/**
+			 * Provide a set of document highlights, like all occurrences of a variable or
+			 * all exit-points of a function.
+			 */
+			provideDocumentHighlights(model: editor.ITextModel, position: Position, token: CancellationToken): ProviderResult<DocumentHighlight[]>;
+		}
+
+		/**
+		 * The linked editing range provider interface defines the contract between extensions and
+		 * the linked editing feature.
+		 */
+		export interface LinkedEditingRangeProvider {
+			/**
+			 * Provide a list of ranges that can be edited together.
+			 */
+			provideLinkedEditingRanges(model: editor.ITextModel, position: Position, token: CancellationToken): ProviderResult<LinkedEditingRanges>;
+		}
+
+		/**
+		 * Represents a list of ranges that can be edited together along with a word pattern to describe valid contents.
+		 */
+		export interface LinkedEditingRanges {
+			/**
+			 * A list of ranges that can be edited together. The ranges must have
+			 * identical length and text content. The ranges cannot overlap
+			 */
+			ranges: IRange[];
+			/**
+			 * An optional word pattern that describes valid contents for the given ranges.
+			 * If no pattern is provided, the language configuration's word pattern will be used.
+			 */
+			wordPattern?: RegExp;
+		}
+
+		/**
+		 * Value-object that contains additional information when
+		 * requesting references.
+		 */
+		export interface ReferenceContext {
+			/**
+			 * Include the declaration of the current symbol.
+			 */
+			includeDeclaration: boolean;
+		}
+
+		/**
+		 * The reference provider interface defines the contract between extensions and
+		 * the [find references](https://code.visualstudio.com/docs/editor/editingevolved#_peek)-feature.
+		 */
+		export interface ReferenceProvider {
+			/**
+			 * Provide a set of project-wide references for the given position and document.
+			 */
+			provideReferences(model: editor.ITextModel, position: Position, context: ReferenceContext, token: CancellationToken): ProviderResult<Location[]>;
+		}
+
+		/**
+		 * Represents a location inside a resource, such as a line
+		 * inside a text file.
+		 */
+		export interface Location {
+			/**
+			 * The resource identifier of this location.
+			 */
+			uri: Uri;
+			/**
+			 * The document range of this locations.
+			 */
+			range: IRange;
+		}
+
+		export interface LocationLink {
+			/**
+			 * A range to select where this link originates from.
+			 */
+			originSelectionRange?: IRange;
+			/**
+			 * The target uri this link points to.
+			 */
+			uri: Uri;
+			/**
+			 * The full range this link points to.
+			 */
+			range: IRange;
+			/**
+			 * A range to select this link points to. Must be contained
+			 * in `LocationLink.range`.
+			 */
+			targetSelectionRange?: IRange;
+		}
+
+		export type Definition = Location | Location[] | LocationLink[];
+
+		/**
+		 * The definition provider interface defines the contract between extensions and
+		 * the [go to definition](https://code.visualstudio.com/docs/editor/editingevolved#_go-to-definition)
+		 * and peek definition features.
+		 */
+		export interface DefinitionProvider {
+			/**
+			 * Provide the definition of the symbol at the given position and document.
+			 */
+			provideDefinition(model: editor.ITextModel, position: Position, token: CancellationToken): ProviderResult<Definition | LocationLink[]>;
+		}
+
+		/**
+		 * The definition provider interface defines the contract between extensions and
+		 * the [go to definition](https://code.visualstudio.com/docs/editor/editingevolved#_go-to-definition)
+		 * and peek definition features.
+		 */
+		export interface DeclarationProvider {
+			/**
+			 * Provide the declaration of the symbol at the given position and document.
+			 */
+			provideDeclaration(model: editor.ITextModel, position: Position, token: CancellationToken): ProviderResult<Definition | LocationLink[]>;
+		}
+
+		/**
+		 * The implementation provider interface defines the contract between extensions and
+		 * the go to implementation feature.
+		 */
+		export interface ImplementationProvider {
+			/**
+			 * Provide the implementation of the symbol at the given position and document.
+			 */
+			provideImplementation(model: editor.ITextModel, position: Position, token: CancellationToken): ProviderResult<Definition | LocationLink[]>;
+		}
+
+		/**
+		 * The type definition provider interface defines the contract between extensions and
+		 * the go to type definition feature.
+		 */
+		export interface TypeDefinitionProvider {
+			/**
+			 * Provide the type definition of the symbol at the given position and document.
+			 */
+			provideTypeDefinition(model: editor.ITextModel, position: Position, token: CancellationToken): ProviderResult<Definition | LocationLink[]>;
+		}
+
+		/**
+		 * A symbol kind.
+		 */
+		export enum SymbolKind {
+			File = 0,
+			Module = 1,
+			Namespace = 2,
+			Package = 3,
+			Class = 4,
+			Method = 5,
+			Property = 6,
+			Field = 7,
+			Constructor = 8,
+			Enum = 9,
+			Interface = 10,
+			Function = 11,
+			Variable = 12,
+			Constant = 13,
+			String = 14,
+			Number = 15,
+			Boolean = 16,
+			Array = 17,
+			Object = 18,
+			Key = 19,
+			Null = 20,
+			EnumMember = 21,
+			Struct = 22,
+			Event = 23,
+			Operator = 24,
+			TypeParameter = 25
+		}
+
+		export enum SymbolTag {
+			Deprecated = 1
+		}
+
+		export interface DocumentSymbol {
+			name: string;
+			detail: string;
+			kind: SymbolKind;
+			tags: ReadonlyArray<SymbolTag>;
+			containerName?: string;
+			range: IRange;
+			selectionRange: IRange;
+			children?: DocumentSymbol[];
+		}
+
+		/**
+		 * The document symbol provider interface defines the contract between extensions and
+		 * the [go to symbol](https://code.visualstudio.com/docs/editor/editingevolved#_go-to-symbol)-feature.
+		 */
+		export interface DocumentSymbolProvider {
+			displayName?: string;
+			/**
+			 * Provide symbol information for the given document.
+			 */
+			provideDocumentSymbols(model: editor.ITextModel, token: CancellationToken): ProviderResult<DocumentSymbol[]>;
+		}
+
+		export type TextEdit = {
+			range: IRange;
+			text: string;
+			eol?: editor.EndOfLineSequence;
+		};
+
+		/**
+		 * Interface used to format a model
+		 */
+		export interface FormattingOptions {
+			/**
+			 * Size of a tab in spaces.
+			 */
+			tabSize: number;
+			/**
+			 * Prefer spaces over tabs.
+			 */
+			insertSpaces: boolean;
+		}
+
+		/**
+		 * The document formatting provider interface defines the contract between extensions and
+		 * the formatting-feature.
+		 */
+		export interface DocumentFormattingEditProvider {
+			readonly displayName?: string;
+			/**
+			 * Provide formatting edits for a whole document.
+			 */
+			provideDocumentFormattingEdits(model: editor.ITextModel, options: FormattingOptions, token: CancellationToken): ProviderResult<TextEdit[]>;
+		}
+
+		/**
+		 * The document formatting provider interface defines the contract between extensions and
+		 * the formatting-feature.
+		 */
+		export interface DocumentRangeFormattingEditProvider {
+			readonly displayName?: string;
+			/**
+			 * Provide formatting edits for a range in a document.
+			 *
+			 * The given range is a hint and providers can decide to format a smaller
+			 * or larger range. Often this is done by adjusting the start and end
+			 * of the range to full syntax nodes.
+			 */
+			provideDocumentRangeFormattingEdits(model: editor.ITextModel, range: Range, options: FormattingOptions, token: CancellationToken): ProviderResult<TextEdit[]>;
+		}
+
+		/**
+		 * The document formatting provider interface defines the contract between extensions and
+		 * the formatting-feature.
+		 */
+		export interface OnTypeFormattingEditProvider {
+			autoFormatTriggerCharacters: string[];
+			/**
+			 * Provide formatting edits after a character has been typed.
+			 *
+			 * The given position and character should hint to the provider
+			 * what range the position to expand to, like find the matching `{`
+			 * when `}` has been entered.
+			 */
+			provideOnTypeFormattingEdits(model: editor.ITextModel, position: Position, ch: string, options: FormattingOptions, token: CancellationToken): ProviderResult<TextEdit[]>;
+		}
+
+		/**
+		 * A link inside the editor.
+		 */
+		export interface ILink {
+			range: IRange;
+			url?: Uri | string;
+			tooltip?: string;
+		}
+
+		export interface ILinksList {
+			links: ILink[];
+			dispose?(): void;
+		}
+
+		/**
+		 * A provider of links.
+		 */
+		export interface LinkProvider {
+			provideLinks(model: editor.ITextModel, token: CancellationToken): ProviderResult<ILinksList>;
+			resolveLink?: (link: ILink, token: CancellationToken) => ProviderResult<ILink>;
+		}
+
+		/**
+		 * A color in RGBA format.
+		 */
+		export interface IColor {
+			/**
+			 * The red component in the range [0-1].
+			 */
+			readonly red: number;
+			/**
+			 * The green component in the range [0-1].
+			 */
+			readonly green: number;
+			/**
+			 * The blue component in the range [0-1].
+			 */
+			readonly blue: number;
+			/**
+			 * The alpha component in the range [0-1].
+			 */
+			readonly alpha: number;
+		}
+
+		/**
+		 * String representations for a color
+		 */
+		export interface IColorPresentation {
+			/**
+			 * The label of this color presentation. It will be shown on the color
+			 * picker header. By default this is also the text that is inserted when selecting
+			 * this color presentation.
+			 */
+			label: string;
+			/**
+			 * An {@link TextEdit edit} which is applied to a document when selecting
+			 * this presentation for the color.
+			 */
+			textEdit?: TextEdit;
+			/**
+			 * An optional array of additional {@link TextEdit text edits} that are applied when
+			 * selecting this color presentation.
+			 */
+			additionalTextEdits?: TextEdit[];
+		}
+
+		/**
+		 * A color range is a range in a text model which represents a color.
+		 */
+		export interface IColorInformation {
+			/**
+			 * The range within the model.
+			 */
+			range: IRange;
+			/**
+			 * The color represented in this range.
+			 */
+			color: IColor;
+		}
+
+		/**
+		 * A provider of colors for editor models.
+		 */
+		export interface DocumentColorProvider {
+			/**
+			 * Provides the color ranges for a specific model.
+			 */
+			provideDocumentColors(model: editor.ITextModel, token: CancellationToken): ProviderResult<IColorInformation[]>;
+			/**
+			 * Provide the string representations for a color.
+			 */
+			provideColorPresentations(model: editor.ITextModel, colorInfo: IColorInformation, token: CancellationToken): ProviderResult<IColorPresentation[]>;
+		}
+
+		export interface SelectionRange {
+			range: IRange;
+		}
+
+		export interface SelectionRangeProvider {
+			/**
+			 * Provide ranges that should be selected from the given position.
+			 */
+			provideSelectionRanges(model: editor.ITextModel, positions: Position[], token: CancellationToken): ProviderResult<SelectionRange[][]>;
+		}
+
+		export interface FoldingContext {
+		}
+
+		/**
+		 * A provider of folding ranges for editor models.
+		 */
+		export interface FoldingRangeProvider {
+			/**
+			 * An optional event to signal that the folding ranges from this provider have changed.
+			 */
+			onDidChange?: IEvent<this>;
+			/**
+			 * Provides the folding ranges for a specific model.
+			 */
+			provideFoldingRanges(model: editor.ITextModel, context: FoldingContext, token: CancellationToken): ProviderResult<FoldingRange[]>;
+		}
+
+		export interface FoldingRange {
+			/**
+			 * The one-based start line of the range to fold. The folded area starts after the line's last character.
+			 */
+			start: number;
+			/**
+			 * The one-based end line of the range to fold. The folded area ends with the line's last character.
+			 */
+			end: number;
+			/**
+			 * Describes the {@link FoldingRangeKind Kind} of the folding range such as {@link FoldingRangeKind.Comment Comment} or
+			 * {@link FoldingRangeKind.Region Region}. The kind is used to categorize folding ranges and used by commands
+			 * like 'Fold all comments'. See
+			 * {@link FoldingRangeKind} for an enumeration of standardized kinds.
+			 */
+			kind?: FoldingRangeKind;
+		}
+
+		export class FoldingRangeKind {
+			value: string;
+			/**
+			 * Kind for folding range representing a comment. The value of the kind is 'comment'.
+			 */
+			static readonly Comment: FoldingRangeKind;
+			/**
+			 * Kind for folding range representing a import. The value of the kind is 'imports'.
+			 */
+			static readonly Imports: FoldingRangeKind;
+			/**
+			 * Kind for folding range representing regions (for example marked by `#region`, `#endregion`).
+			 * The value of the kind is 'region'.
+			 */
+			static readonly Region: FoldingRangeKind;
+			/**
+			 * Creates a new {@link FoldingRangeKind}.
+			 *
+			 * @param value of the kind.
+			 */
+			constructor(value: string);
+		}
+
+		export interface WorkspaceEditMetadata {
+			needsConfirmation: boolean;
+			label: string;
+			description?: string;
+		}
+
+		export interface WorkspaceFileEditOptions {
+			overwrite?: boolean;
+			ignoreIfNotExists?: boolean;
+			ignoreIfExists?: boolean;
+			recursive?: boolean;
+			copy?: boolean;
+			folder?: boolean;
+			skipTrashBin?: boolean;
+			maxSize?: number;
+		}
+
+		export interface WorkspaceFileEdit {
+			oldUri?: Uri;
+			newUri?: Uri;
+			options?: WorkspaceFileEditOptions;
+			metadata?: WorkspaceEditMetadata;
+		}
+
+		export interface WorkspaceTextEdit {
+			resource: Uri;
+			edit: TextEdit;
+			modelVersionId?: number;
+			metadata?: WorkspaceEditMetadata;
+		}
+
+		export interface WorkspaceEdit {
+			edits: Array<WorkspaceTextEdit | WorkspaceFileEdit>;
+		}
+
+		export interface Rejection {
+			rejectReason?: string;
+		}
+
+		export interface RenameLocation {
+			range: IRange;
+			text: string;
+		}
+
+		export interface RenameProvider {
+			provideRenameEdits(model: editor.ITextModel, position: Position, newName: string, token: CancellationToken): ProviderResult<WorkspaceEdit & Rejection>;
+			resolveRenameLocation?(model: editor.ITextModel, position: Position, token: CancellationToken): ProviderResult<RenameLocation & Rejection>;
+		}
+
+		export interface Command {
+			id: string;
+			title: string;
+			tooltip?: string;
+			arguments?: any[];
+		}
+
+		export interface CodeLens {
+			range: IRange;
+			id?: string;
+			command?: Command;
+		}
+
+		export interface CodeLensList {
+			lenses: CodeLens[];
+			dispose(): void;
+		}
+
+		export interface CodeLensProvider {
+			onDidChange?: IEvent<this>;
+			provideCodeLenses(model: editor.ITextModel, token: CancellationToken): ProviderResult<CodeLensList>;
+			resolveCodeLens?(model: editor.ITextModel, codeLens: CodeLens, token: CancellationToken): ProviderResult<CodeLens>;
+		}
+
+		export enum InlayHintKind {
+			Other = 0,
+			Type = 1,
+			Parameter = 2
+		}
+
+		export interface InlayHintLabelPart {
+			label: string;
+			tooltip?: string | IMarkdownString;
+			command?: Command;
+			location?: Location;
+		}
+
+		export interface InlayHint {
+			label: string | InlayHintLabelPart[];
+			tooltip?: string | IMarkdownString;
+			position: IPosition;
+			kind: InlayHintKind;
+			paddingLeft?: boolean;
+			paddingRight?: boolean;
+		}
+
+		export interface InlayHintList {
+			hints: InlayHint[];
+			dispose(): void;
+		}
+
+		export interface InlayHintsProvider {
+			displayName?: string;
+			onDidChangeInlayHints?: IEvent<void>;
+			provideInlayHints(model: editor.ITextModel, range: Range, token: CancellationToken): ProviderResult<InlayHintList>;
+			resolveInlayHint?(hint: InlayHint, token: CancellationToken): ProviderResult<InlayHint>;
+		}
+
+		export interface SemanticTokensLegend {
+			readonly tokenTypes: string[];
+			readonly tokenModifiers: string[];
+		}
+
+		export interface SemanticTokens {
+			readonly resultId?: string;
+			readonly data: Uint32Array;
+		}
+
+		export interface SemanticTokensEdit {
+			readonly start: number;
+			readonly deleteCount: number;
+			readonly data?: Uint32Array;
+		}
+
+		export interface SemanticTokensEdits {
+			readonly resultId?: string;
+			readonly edits: SemanticTokensEdit[];
+		}
+
+		export interface DocumentSemanticTokensProvider {
+			onDidChange?: IEvent<void>;
+			getLegend(): SemanticTokensLegend;
+			provideDocumentSemanticTokens(model: editor.ITextModel, lastResultId: string | null, token: CancellationToken): ProviderResult<SemanticTokens | SemanticTokensEdits>;
+			releaseDocumentSemanticTokens(resultId: string | undefined): void;
+		}
+
+		export interface DocumentRangeSemanticTokensProvider {
+			getLegend(): SemanticTokensLegend;
+			provideDocumentRangeSemanticTokens(model: editor.ITextModel, range: Range, token: CancellationToken): ProviderResult<SemanticTokens>;
+		}
+
+		export interface ITokenizationSupportFactory {
+			createTokenizationSupport(): ProviderResult<ITokenizationSupport>;
+		}
+
+		export const ILanguageService: extra.ServiceIdentifier<ILanguageService>;
+
+		export interface ILanguageExtensionPoint {
+			id: string;
+			extensions?: string[];
+			filenames?: string[];
+			filenamePatterns?: string[];
+			firstLine?: string;
+			aliases?: string[];
+			mimetypes?: string[];
+			configuration?: Uri;
+		}
+
+		export interface ILanguageSelection {
+			readonly languageId: string;
+			readonly onDidChange: IEvent<string>;
+		}
+
+		export interface ILanguageNameIdPair {
+			readonly languageName: string;
+			readonly languageId: string;
+		}
+
+		export interface ILanguageIcon {
+			readonly light: Uri;
+			readonly dark: Uri;
+		}
+
+		export interface ILanguageService {
+			readonly _serviceBrand: undefined;
+			/**
+			 * A codec which can encode and decode a string `languageId` as a number.
+			 */
+			readonly languageIdCodec: ILanguageIdCodec;
+			/**
+			 * An event emitted when a language is needed for the first time.
+			 */
+			onDidEncounterLanguage: IEvent<string>;
+			/**
+			 * An event emitted when languages have changed.
+			 */
+			onDidChange: IEvent<void>;
+			/**
+			 * Check if `languageId` is registered.
+			 */
+			isRegisteredLanguageId(languageId: string): boolean;
+			/**
+			 * Get a list of all registered languages.
+			 */
+			getRegisteredLanguageIds(): string[];
+			/**
+			 * Get a list of all registered languages with a name.
+			 * If a language is explicitly registered without a name, it will not be part of the result.
+			 * The result is sorted using by name case insensitive.
+			 */
+			getSortedRegisteredLanguageNames(): ILanguageNameIdPair[];
+			/**
+			 * Get the preferred language name for a language.
+			 */
+			getLanguageName(languageId: string): string | null;
+			/**
+			 * Get the mimetype for a language.
+			 */
+			getMimeType(languageId: string): string | null;
+			/**
+			 * Get all file extensions for a language.
+			 */
+			getExtensions(languageId: string): ReadonlyArray<string>;
+			/**
+			 * Get all file names for a language.
+			 */
+			getFilenames(languageId: string): ReadonlyArray<string>;
+			/**
+			 * Get all language configuration files for a language.
+			 */
+			getConfigurationFiles(languageId: string): ReadonlyArray<Uri>;
+			/**
+			 * Look up a language by its name case insensitive.
+			 */
+			getLanguageIdByLanguageName(languageName: string): string | null;
+			/**
+			 * Look up a language by its mime type.
+			 */
+			getLanguageIdByMimeType(mimeType: string | null | undefined): string | null;
+			/**
+			 * Guess the language id for a resource.
+			 */
+			guessLanguageIdByFilepathOrFirstLine(resource: Uri, firstLine?: string): string | null;
+			/**
+			 * Will fall back to 'plaintext' if `languageId` is unknown.
+			 */
+			createById(languageId: string | null | undefined): ILanguageSelection;
+			/**
+			 * Will fall back to 'plaintext' if `mimeType` is unknown.
+			 */
+			createByMimeType(mimeType: string | null | undefined): ILanguageSelection;
+			/**
+			 * Will fall back to 'plaintext' if the `languageId` cannot be determined.
+			 */
+			createByFilepathOrFirstLine(resource: Uri | null, firstLine?: string): ILanguageSelection;
+		}
+		/**
+		 * A Monarch language definition
+		 */
+		export interface IMonarchLanguage {
+			/**
+			 * map from string to ILanguageRule[]
+			 */
+			tokenizer: {
+				[name: string]: IMonarchLanguageRule[];
+			};
+			/**
+			 * is the language case insensitive?
+			 */
+			ignoreCase?: boolean;
+			/**
+			 * is the language unicode-aware? (i.e., /\u{1D306}/)
+			 */
+			unicode?: boolean;
+			/**
+			 * if no match in the tokenizer assign this token class (default 'source')
+			 */
+			defaultToken?: string;
+			/**
+			 * for example [['{','}','delimiter.curly']]
+			 */
+			brackets?: IMonarchLanguageBracket[];
+			/**
+			 * start symbol in the tokenizer (by default the first entry is used)
+			 */
+			start?: string;
+			/**
+			 * attach this to every token class (by default '.' + name)
+			 */
+			tokenPostfix?: string;
+			/**
+			 * include line feeds (in the form of a \n character) at the end of lines
+			 * Defaults to false
+			 */
+			includeLF?: boolean;
+			/**
+			 * Other keys that can be referred to by the tokenizer.
+			 */
+			[key: string]: any;
+		}
+
+		/**
+		 * A rule is either a regular expression and an action
+		 * 		shorthands: [reg,act] == { regex: reg, action: act}
+		 *		and       : [reg,act,nxt] == { regex: reg, action: act{ next: nxt }}
+		 */
+		export type IShortMonarchLanguageRule1 = [string | RegExp, IMonarchLanguageAction];
+
+		export type IShortMonarchLanguageRule2 = [string | RegExp, IMonarchLanguageAction, string];
+
+		export interface IExpandedMonarchLanguageRule {
+			/**
+			 * match tokens
+			 */
+			regex?: string | RegExp;
+			/**
+			 * action to take on match
+			 */
+			action?: IMonarchLanguageAction;
+			/**
+			 * or an include rule. include all rules from the included state
+			 */
+			include?: string;
+		}
+
+		export type IMonarchLanguageRule = IShortMonarchLanguageRule1 | IShortMonarchLanguageRule2 | IExpandedMonarchLanguageRule;
+
+		/**
+		 * An action is either an array of actions...
+		 * ... or a case statement with guards...
+		 * ... or a basic action with a token value.
+		 */
+		export type IShortMonarchLanguageAction = string;
+
+		export interface IExpandedMonarchLanguageAction {
+			/**
+			 * array of actions for each parenthesized match group
+			 */
+			group?: IMonarchLanguageAction[];
+			/**
+			 * map from string to ILanguageAction
+			 */
+			cases?: Object;
+			/**
+			 * token class (ie. css class) (or "@brackets" or "@rematch")
+			 */
+			token?: string;
+			/**
+			 * the next state to push, or "@push", "@pop", "@popall"
+			 */
+			next?: string;
+			/**
+			 * switch to this state
+			 */
+			switchTo?: string;
+			/**
+			 * go back n characters in the stream
+			 */
+			goBack?: number;
+			/**
+			 * @open or @close
+			 */
+			bracket?: string;
+			/**
+			 * switch to embedded language (using the mimetype) or get out using "@pop"
+			 */
+			nextEmbedded?: string;
+			/**
+			 * log a message to the browser console window
+			 */
+			log?: string;
+		}
+
+		export type IMonarchLanguageAction = IShortMonarchLanguageAction | IExpandedMonarchLanguageAction | IShortMonarchLanguageAction[] | IExpandedMonarchLanguageAction[];
+
+		/**
+		 * This interface can be shortened as an array, ie. ['{','}','delimiter.curly']
+		 */
+		export interface IMonarchLanguageBracket {
+			/**
+			 * open bracket
+			 */
+			open: string;
+			/**
+			 * closing bracket
+			 */
+			close: string;
+			/**
+			 * token class
+			 */
+			token: string;
+		}
+
+
+		export class LanguageService extends Disposable implements ILanguageService {
+			_serviceBrand: undefined;
+			static instanceCount: number;
+			readonly languageIdCodec: ILanguageIdCodec;
+			readonly onDidEncounterLanguage: IEvent<string>;
+			protected readonly _onDidChange: any;
+			readonly onDidChange: IEvent<void>;
+			constructor(warnOnOverwrite?: boolean);
+			dispose(): void;
+			isRegisteredLanguageId(languageId: string | null | undefined): boolean;
+			getRegisteredLanguageIds(): string[];
+			getSortedRegisteredLanguageNames(): ILanguageNameIdPair[];
+			getLanguageName(languageId: string): string | null;
+			getMimeType(languageId: string): string | null;
+			getExtensions(languageId: string): ReadonlyArray<string>;
+			getFilenames(languageId: string): ReadonlyArray<string>;
+			getConfigurationFiles(languageId: string): ReadonlyArray<Uri>;
+			getLanguageIdByLanguageName(languageName: string): string | null;
+			getLanguageIdByMimeType(mimeType: string | null | undefined): string | null;
+			guessLanguageIdByFilepathOrFirstLine(resource: Uri | null, firstLine?: string): string | null;
+			createById(languageId: string | null | undefined): ILanguageSelection;
+			createByMimeType(mimeType: string | null | undefined): ILanguageSelection;
+			createByFilepathOrFirstLine(resource: Uri | null, firstLine?: string): ILanguageSelection;
+		}
+
+
+		/**
+		 * Interface used to support insertion of mode specific comments.
+		 */
+		export interface ICommentsConfiguration {
+			lineCommentToken?: string;
+			blockCommentStartToken?: string;
+			blockCommentEndToken?: string;
+		}
+
+		export interface IVirtualModel {
+			getLineTokens(lineNumber: number): LineTokens;
+			getLanguageId(): string;
+			getLanguageIdAtPosition(lineNumber: number, column: number): string;
+			getLineContent(lineNumber: number): string;
+		}
+
+		export interface IIndentConverter {
+			shiftIndent(indentation: string): string;
+			unshiftIndent(indentation: string): string;
+			normalizeIndentation?(indentation: string): string;
+		}
+
+		export interface ILanguageConfigurationService {
+			readonly _serviceBrand: undefined;
+			onDidChange: IEvent<LanguageConfigurationServiceChangeEvent>;
+			getLanguageConfiguration(languageId: string): ResolvedLanguageConfiguration;
+		}
+
+		export class LanguageConfigurationServiceChangeEvent {
+			readonly languageId: string | undefined;
+			constructor(languageId: string | undefined);
+			affects(languageId: string): boolean;
+		}
+
+		export const ILanguageConfigurationService: extra.ServiceIdentifier<ILanguageConfigurationService>;
+
+		export class LanguageConfigurationService extends Disposable implements ILanguageConfigurationService {
+			_serviceBrand: undefined;
+			readonly onDidChange: any;
+			constructor(configurationService: extra.IConfigurationService, languageService: ILanguageService);
+			getLanguageConfiguration(languageId: string): ResolvedLanguageConfiguration;
+		}
+
+		export class LanguageConfigurationChangeEvent {
+			readonly languageId: string;
+			constructor(languageId: string);
+		}
+
+		export class LanguageConfigurationRegistryImpl {
+			readonly onDidChange: IEvent<LanguageConfigurationChangeEvent>;
+			/**
+			 * @param priority Use a higher number for higher priority
+			 */
+			register(languageId: string, configuration: LanguageConfiguration, priority?: number): IDisposable;
+			getComments(languageId: string): ICommentsConfiguration | null;
+			getColorizedBracketPairs(languageId: string): readonly CharacterPair[];
+		}
+
+		/**
+		 * @deprecated Use ILanguageConfigurationService instead.
 		*/
-		readonly text: string;
+		export const LanguageConfigurationRegistry: LanguageConfigurationRegistryImpl;
+
 		/**
-		 * The range to replace.
-		 * Must begin and end on the same line.
+		 * Immutable.
 		*/
-		readonly range?: IRange;
-		readonly command?: Command;
+		export class ResolvedLanguageConfiguration {
+			readonly languageId: string;
+			readonly underlyingConfig: LanguageConfiguration;
+			readonly comments: ICommentsConfiguration | null;
+			readonly characterPair: CharacterPairSupport;
+			readonly wordDefinition: RegExp;
+			readonly indentRulesSupport: IndentRulesSupport | null;
+			readonly indentationRules: IndentationRule | undefined;
+			readonly foldingRules: FoldingRules;
+			constructor(languageId: string, underlyingConfig: LanguageConfiguration);
+			getWordDefinition(): RegExp;
+			get brackets(): RichEditBrackets | null;
+			get electricCharacter(): BracketElectricCharacterSupport | null;
+			onEnter(autoIndent: editor.EditorAutoIndentStrategy, previousLineText: string, beforeEnterText: string, afterEnterText: string): EnterAction | null;
+			getAutoClosingPairs(): AutoClosingPairs;
+			getAutoCloseBeforeSet(): string;
+			getSurroundingPairs(): IAutoClosingPair[];
+		}
+
+		export class CharacterPairSupport {
+		static readonly DEFAULT_AUTOCLOSE_BEFORE_LANGUAGE_DEFINED = ';:.,=}])> \n\t';
+		static readonly DEFAULT_AUTOCLOSE_BEFORE_WHITESPACE = ' \n\t';
+		constructor(config: LanguageConfiguration);
+		getAutoClosingPairs(): StandardAutoClosingPairConditional[];
+		getAutoCloseBeforeSet(): string;
+		getSurroundingPairs(): IAutoClosingPair[];
+		getColorizedBrackets(): readonly CharacterPair[];
+	}
+
+	export class IndentRulesSupport {
+		constructor(indentationRules: IndentationRule);
+		shouldIncrease(text: string): boolean;
+		shouldDecrease(text: string): boolean;
+		shouldIndentNextLine(text: string): boolean;
+		shouldIgnore(text: string): boolean;
+		getIndentMetadata(text: string): number;
+	}
+
+	export class RichEditBrackets {
+		_richEditBracketsBrand: void;
 		/**
-		 * If set to `true`, unopened closing brackets are removed and unclosed opening brackets are closed.
-		 * Defaults to `false`.
-		*/
-		readonly completeBracketPairs?: boolean;
-	}
-
-	export interface InlineCompletions<TItem extends InlineCompletion = InlineCompletion> {
-		readonly items: readonly TItem[];
-	}
-
-	export interface InlineCompletionsProvider<T extends InlineCompletions = InlineCompletions> {
-		provideInlineCompletions(model: editor.ITextModel, position: Position, context: InlineCompletionContext, token: CancellationToken): ProviderResult<T>;
-		/**
-		 * Will be called when an item is shown.
-		*/
-		handleItemDidShow?(completions: T, item: T['items'][number]): void;
-		/**
-		 * Will be called when a completions list is no longer in use and can be garbage-collected.
-		*/
-		freeInlineCompletions(completions: T): void;
-	}
-
-	export interface CodeAction {
-		title: string;
-		command?: Command;
-		edit?: WorkspaceEdit;
-		diagnostics?: editor.IMarkerData[];
-		kind?: string;
-		isPreferred?: boolean;
-		disabled?: string;
-	}
-
-	export interface CodeActionList extends IDisposable {
-		readonly actions: ReadonlyArray<CodeAction>;
-	}
-
-	/**
-	 * Represents a parameter of a callable-signature. A parameter can
-	 * have a label and a doc-comment.
-	 */
-	export interface ParameterInformation {
-		/**
-		 * The label of this signature. Will be shown in
-		 * the UI.
+		 * All groups of brackets defined for this language.
 		 */
-		label: string | [number, number];
+		readonly brackets: RichEditBracket[];
 		/**
-		 * The human-readable doc-comment of this signature. Will be shown
-		 * in the UI but can be omitted.
-		 */
-		documentation?: string | IMarkdownString;
-	}
-
-	/**
-	 * Represents the signature of something callable. A signature
-	 * can have a label, like a function-name, a doc-comment, and
-	 * a set of parameters.
-	 */
-	export interface SignatureInformation {
-		/**
-		 * The label of this signature. Will be shown in
-		 * the UI.
-		 */
-		label: string;
-		/**
-		 * The human-readable doc-comment of this signature. Will be shown
-		 * in the UI but can be omitted.
-		 */
-		documentation?: string | IMarkdownString;
-		/**
-		 * The parameters of this signature.
-		 */
-		parameters: ParameterInformation[];
-		/**
-		 * Index of the active parameter.
+		 * A regular expression that is useful to search for all bracket pairs in a string.
 		 *
-		 * If provided, this is used in place of `SignatureHelp.activeSignature`.
+		 * See the fine details in `getRegexForBrackets`.
 		 */
-		activeParameter?: number;
-	}
-
-	/**
-	 * Signature help represents the signature of something
-	 * callable. There can be multiple signatures but only one
-	 * active and only one active parameter.
-	 */
-	export interface SignatureHelp {
+		readonly forwardRegex: RegExp;
 		/**
-		 * One or more signatures.
-		 */
-		signatures: SignatureInformation[];
-		/**
-		 * The active signature.
-		 */
-		activeSignature: number;
-		/**
-		 * The active parameter of the active signature.
-		 */
-		activeParameter: number;
-	}
-
-	export interface SignatureHelpResult extends IDisposable {
-		value: SignatureHelp;
-	}
-
-	export enum SignatureHelpTriggerKind {
-		Invoke = 1,
-		TriggerCharacter = 2,
-		ContentChange = 3
-	}
-
-	export interface SignatureHelpContext {
-		readonly triggerKind: SignatureHelpTriggerKind;
-		readonly triggerCharacter?: string;
-		readonly isRetrigger: boolean;
-		readonly activeSignatureHelp?: SignatureHelp;
-	}
-
-	/**
-	 * The signature help provider interface defines the contract between extensions and
-	 * the [parameter hints](https://code.visualstudio.com/docs/editor/intellisense)-feature.
-	 */
-	export interface SignatureHelpProvider {
-		readonly signatureHelpTriggerCharacters?: ReadonlyArray<string>;
-		readonly signatureHelpRetriggerCharacters?: ReadonlyArray<string>;
-		/**
-		 * Provide help for the signature at the given position and document.
-		 */
-		provideSignatureHelp(model: editor.ITextModel, position: Position, token: CancellationToken, context: SignatureHelpContext): ProviderResult<SignatureHelpResult>;
-	}
-
-	/**
-	 * A document highlight kind.
-	 */
-	export enum DocumentHighlightKind {
-		/**
-		 * A textual occurrence.
-		 */
-		Text = 0,
-		/**
-		 * Read-access of a symbol, like reading a variable.
-		 */
-		Read = 1,
-		/**
-		 * Write-access of a symbol, like writing to a variable.
-		 */
-		Write = 2
-	}
-
-	/**
-	 * A document highlight is a range inside a text document which deserves
-	 * special attention. Usually a document highlight is visualized by changing
-	 * the background color of its range.
-	 */
-	export interface DocumentHighlight {
-		/**
-		 * The range this highlight applies to.
-		 */
-		range: IRange;
-		/**
-		 * The highlight kind, default is {@link DocumentHighlightKind.Text text}.
-		 */
-		kind?: DocumentHighlightKind;
-	}
-
-	/**
-	 * The document highlight provider interface defines the contract between extensions and
-	 * the word-highlight-feature.
-	 */
-	export interface DocumentHighlightProvider {
-		/**
-		 * Provide a set of document highlights, like all occurrences of a variable or
-		 * all exit-points of a function.
-		 */
-		provideDocumentHighlights(model: editor.ITextModel, position: Position, token: CancellationToken): ProviderResult<DocumentHighlight[]>;
-	}
-
-	/**
-	 * The linked editing range provider interface defines the contract between extensions and
-	 * the linked editing feature.
-	 */
-	export interface LinkedEditingRangeProvider {
-		/**
-		 * Provide a list of ranges that can be edited together.
-		 */
-		provideLinkedEditingRanges(model: editor.ITextModel, position: Position, token: CancellationToken): ProviderResult<LinkedEditingRanges>;
-	}
-
-	/**
-	 * Represents a list of ranges that can be edited together along with a word pattern to describe valid contents.
-	 */
-	export interface LinkedEditingRanges {
-		/**
-		 * A list of ranges that can be edited together. The ranges must have
-		 * identical length and text content. The ranges cannot overlap
-		 */
-		ranges: IRange[];
-		/**
-		 * An optional word pattern that describes valid contents for the given ranges.
-		 * If no pattern is provided, the language configuration's word pattern will be used.
-		 */
-		wordPattern?: RegExp;
-	}
-
-	/**
-	 * Value-object that contains additional information when
-	 * requesting references.
-	 */
-	export interface ReferenceContext {
-		/**
-		 * Include the declaration of the current symbol.
-		 */
-		includeDeclaration: boolean;
-	}
-
-	/**
-	 * The reference provider interface defines the contract between extensions and
-	 * the [find references](https://code.visualstudio.com/docs/editor/editingevolved#_peek)-feature.
-	 */
-	export interface ReferenceProvider {
-		/**
-		 * Provide a set of project-wide references for the given position and document.
-		 */
-		provideReferences(model: editor.ITextModel, position: Position, context: ReferenceContext, token: CancellationToken): ProviderResult<Location[]>;
-	}
-
-	/**
-	 * Represents a location inside a resource, such as a line
-	 * inside a text file.
-	 */
-	export interface Location {
-		/**
-		 * The resource identifier of this location.
-		 */
-		uri: Uri;
-		/**
-		 * The document range of this locations.
-		 */
-		range: IRange;
-	}
-
-	export interface LocationLink {
-		/**
-		 * A range to select where this link originates from.
-		 */
-		originSelectionRange?: IRange;
-		/**
-		 * The target uri this link points to.
-		 */
-		uri: Uri;
-		/**
-		 * The full range this link points to.
-		 */
-		range: IRange;
-		/**
-		 * A range to select this link points to. Must be contained
-		 * in `LocationLink.range`.
-		 */
-		targetSelectionRange?: IRange;
-	}
-
-	export type Definition = Location | Location[] | LocationLink[];
-
-	/**
-	 * The definition provider interface defines the contract between extensions and
-	 * the [go to definition](https://code.visualstudio.com/docs/editor/editingevolved#_go-to-definition)
-	 * and peek definition features.
-	 */
-	export interface DefinitionProvider {
-		/**
-		 * Provide the definition of the symbol at the given position and document.
-		 */
-		provideDefinition(model: editor.ITextModel, position: Position, token: CancellationToken): ProviderResult<Definition | LocationLink[]>;
-	}
-
-	/**
-	 * The definition provider interface defines the contract between extensions and
-	 * the [go to definition](https://code.visualstudio.com/docs/editor/editingevolved#_go-to-definition)
-	 * and peek definition features.
-	 */
-	export interface DeclarationProvider {
-		/**
-		 * Provide the declaration of the symbol at the given position and document.
-		 */
-		provideDeclaration(model: editor.ITextModel, position: Position, token: CancellationToken): ProviderResult<Definition | LocationLink[]>;
-	}
-
-	/**
-	 * The implementation provider interface defines the contract between extensions and
-	 * the go to implementation feature.
-	 */
-	export interface ImplementationProvider {
-		/**
-		 * Provide the implementation of the symbol at the given position and document.
-		 */
-		provideImplementation(model: editor.ITextModel, position: Position, token: CancellationToken): ProviderResult<Definition | LocationLink[]>;
-	}
-
-	/**
-	 * The type definition provider interface defines the contract between extensions and
-	 * the go to type definition feature.
-	 */
-	export interface TypeDefinitionProvider {
-		/**
-		 * Provide the type definition of the symbol at the given position and document.
-		 */
-		provideTypeDefinition(model: editor.ITextModel, position: Position, token: CancellationToken): ProviderResult<Definition | LocationLink[]>;
-	}
-
-	/**
-	 * A symbol kind.
-	 */
-	export enum SymbolKind {
-		File = 0,
-		Module = 1,
-		Namespace = 2,
-		Package = 3,
-		Class = 4,
-		Method = 5,
-		Property = 6,
-		Field = 7,
-		Constructor = 8,
-		Enum = 9,
-		Interface = 10,
-		Function = 11,
-		Variable = 12,
-		Constant = 13,
-		String = 14,
-		Number = 15,
-		Boolean = 16,
-		Array = 17,
-		Object = 18,
-		Key = 19,
-		Null = 20,
-		EnumMember = 21,
-		Struct = 22,
-		Event = 23,
-		Operator = 24,
-		TypeParameter = 25
-	}
-
-	export enum SymbolTag {
-		Deprecated = 1
-	}
-
-	export interface DocumentSymbol {
-		name: string;
-		detail: string;
-		kind: SymbolKind;
-		tags: ReadonlyArray<SymbolTag>;
-		containerName?: string;
-		range: IRange;
-		selectionRange: IRange;
-		children?: DocumentSymbol[];
-	}
-
-	/**
-	 * The document symbol provider interface defines the contract between extensions and
-	 * the [go to symbol](https://code.visualstudio.com/docs/editor/editingevolved#_go-to-symbol)-feature.
-	 */
-	export interface DocumentSymbolProvider {
-		displayName?: string;
-		/**
-		 * Provide symbol information for the given document.
-		 */
-		provideDocumentSymbols(model: editor.ITextModel, token: CancellationToken): ProviderResult<DocumentSymbol[]>;
-	}
-
-	export type TextEdit = {
-		range: IRange;
-		text: string;
-		eol?: editor.EndOfLineSequence;
-	};
-
-	/**
-	 * Interface used to format a model
-	 */
-	export interface FormattingOptions {
-		/**
-		 * Size of a tab in spaces.
-		 */
-		tabSize: number;
-		/**
-		 * Prefer spaces over tabs.
-		 */
-		insertSpaces: boolean;
-	}
-
-	/**
-	 * The document formatting provider interface defines the contract between extensions and
-	 * the formatting-feature.
-	 */
-	export interface DocumentFormattingEditProvider {
-		readonly displayName?: string;
-		/**
-		 * Provide formatting edits for a whole document.
-		 */
-		provideDocumentFormattingEdits(model: editor.ITextModel, options: FormattingOptions, token: CancellationToken): ProviderResult<TextEdit[]>;
-	}
-
-	/**
-	 * The document formatting provider interface defines the contract between extensions and
-	 * the formatting-feature.
-	 */
-	export interface DocumentRangeFormattingEditProvider {
-		readonly displayName?: string;
-		/**
-		 * Provide formatting edits for a range in a document.
+		 * A regular expression that is useful to search for all bracket pairs in a string backwards.
 		 *
-		 * The given range is a hint and providers can decide to format a smaller
-		 * or larger range. Often this is done by adjusting the start and end
-		 * of the range to full syntax nodes.
+		 * See the fine details in `getReversedRegexForBrackets`.
 		 */
-		provideDocumentRangeFormattingEdits(model: editor.ITextModel, range: Range, options: FormattingOptions, token: CancellationToken): ProviderResult<TextEdit[]>;
-	}
-
-	/**
-	 * The document formatting provider interface defines the contract between extensions and
-	 * the formatting-feature.
-	 */
-	export interface OnTypeFormattingEditProvider {
-		autoFormatTriggerCharacters: string[];
+		readonly reversedRegex: RegExp;
 		/**
-		 * Provide formatting edits after a character has been typed.
-		 *
-		 * The given position and character should hint to the provider
-		 * what range the position to expand to, like find the matching `{`
-		 * when `}` has been entered.
+		 * The length (i.e. str.length) for the longest bracket pair.
 		 */
-		provideOnTypeFormattingEdits(model: editor.ITextModel, position: Position, ch: string, options: FormattingOptions, token: CancellationToken): ProviderResult<TextEdit[]>;
-	}
-
-	/**
-	 * A link inside the editor.
-	 */
-	export interface ILink {
-		range: IRange;
-		url?: Uri | string;
-		tooltip?: string;
-	}
-
-	export interface ILinksList {
-		links: ILink[];
-		dispose?(): void;
-	}
-
-	/**
-	 * A provider of links.
-	 */
-	export interface LinkProvider {
-		provideLinks(model: editor.ITextModel, token: CancellationToken): ProviderResult<ILinksList>;
-		resolveLink?: (link: ILink, token: CancellationToken) => ProviderResult<ILink>;
-	}
-
-	/**
-	 * A color in RGBA format.
-	 */
-	export interface IColor {
+		readonly maxBracketLength: number;
 		/**
-		 * The red component in the range [0-1].
+		 * A map useful for decoding a regex match and finding which bracket group was matched.
 		 */
-		readonly red: number;
-		/**
-		 * The green component in the range [0-1].
-		 */
-		readonly green: number;
-		/**
-		 * The blue component in the range [0-1].
-		 */
-		readonly blue: number;
-		/**
-		 * The alpha component in the range [0-1].
-		 */
-		readonly alpha: number;
-	}
-
-	/**
-	 * String representations for a color
-	 */
-	export interface IColorPresentation {
-		/**
-		 * The label of this color presentation. It will be shown on the color
-		 * picker header. By default this is also the text that is inserted when selecting
-		 * this color presentation.
-		 */
-		label: string;
-		/**
-		 * An {@link TextEdit edit} which is applied to a document when selecting
-		 * this presentation for the color.
-		 */
-		textEdit?: TextEdit;
-		/**
-		 * An optional array of additional {@link TextEdit text edits} that are applied when
-		 * selecting this color presentation.
-		 */
-		additionalTextEdits?: TextEdit[];
-	}
-
-	/**
-	 * A color range is a range in a text model which represents a color.
-	 */
-	export interface IColorInformation {
-		/**
-		 * The range within the model.
-		 */
-		range: IRange;
-		/**
-		 * The color represented in this range.
-		 */
-		color: IColor;
-	}
-
-	/**
-	 * A provider of colors for editor models.
-	 */
-	export interface DocumentColorProvider {
-		/**
-		 * Provides the color ranges for a specific model.
-		 */
-		provideDocumentColors(model: editor.ITextModel, token: CancellationToken): ProviderResult<IColorInformation[]>;
-		/**
-		 * Provide the string representations for a color.
-		 */
-		provideColorPresentations(model: editor.ITextModel, colorInfo: IColorInformation, token: CancellationToken): ProviderResult<IColorPresentation[]>;
-	}
-
-	export interface SelectionRange {
-		range: IRange;
-	}
-
-	export interface SelectionRangeProvider {
-		/**
-		 * Provide ranges that should be selected from the given position.
-		 */
-		provideSelectionRanges(model: editor.ITextModel, positions: Position[], token: CancellationToken): ProviderResult<SelectionRange[][]>;
-	}
-
-	export interface FoldingContext {
-	}
-
-	/**
-	 * A provider of folding ranges for editor models.
-	 */
-	export interface FoldingRangeProvider {
-		/**
-		 * An optional event to signal that the folding ranges from this provider have changed.
-		 */
-		onDidChange?: IEvent<this>;
-		/**
-		 * Provides the folding ranges for a specific model.
-		 */
-		provideFoldingRanges(model: editor.ITextModel, context: FoldingContext, token: CancellationToken): ProviderResult<FoldingRange[]>;
-	}
-
-	export interface FoldingRange {
-		/**
-		 * The one-based start line of the range to fold. The folded area starts after the line's last character.
-		 */
-		start: number;
-		/**
-		 * The one-based end line of the range to fold. The folded area ends with the line's last character.
-		 */
-		end: number;
-		/**
-		 * Describes the {@link FoldingRangeKind Kind} of the folding range such as {@link FoldingRangeKind.Comment Comment} or
-		 * {@link FoldingRangeKind.Region Region}. The kind is used to categorize folding ranges and used by commands
-		 * like 'Fold all comments'. See
-		 * {@link FoldingRangeKind} for an enumeration of standardized kinds.
-		 */
-		kind?: FoldingRangeKind;
-	}
-
-	export class FoldingRangeKind {
-		value: string;
-		/**
-		 * Kind for folding range representing a comment. The value of the kind is 'comment'.
-		 */
-		static readonly Comment: FoldingRangeKind;
-		/**
-		 * Kind for folding range representing a import. The value of the kind is 'imports'.
-		 */
-		static readonly Imports: FoldingRangeKind;
-		/**
-		 * Kind for folding range representing regions (for example marked by `#region`, `#endregion`).
-		 * The value of the kind is 'region'.
-		 */
-		static readonly Region: FoldingRangeKind;
-		/**
-		 * Creates a new {@link FoldingRangeKind}.
-		 *
-		 * @param value of the kind.
-		 */
-		constructor(value: string);
-	}
-
-	export interface WorkspaceEditMetadata {
-		needsConfirmation: boolean;
-		label: string;
-		description?: string;
-	}
-
-	export interface WorkspaceFileEditOptions {
-		overwrite?: boolean;
-		ignoreIfNotExists?: boolean;
-		ignoreIfExists?: boolean;
-		recursive?: boolean;
-		copy?: boolean;
-		folder?: boolean;
-		skipTrashBin?: boolean;
-		maxSize?: number;
-	}
-
-	export interface WorkspaceFileEdit {
-		oldUri?: Uri;
-		newUri?: Uri;
-		options?: WorkspaceFileEditOptions;
-		metadata?: WorkspaceEditMetadata;
-	}
-
-	export interface WorkspaceTextEdit {
-		resource: Uri;
-		edit: TextEdit;
-		modelVersionId?: number;
-		metadata?: WorkspaceEditMetadata;
-	}
-
-	export interface WorkspaceEdit {
-		edits: Array<WorkspaceTextEdit | WorkspaceFileEdit>;
-	}
-
-	export interface Rejection {
-		rejectReason?: string;
-	}
-
-	export interface RenameLocation {
-		range: IRange;
-		text: string;
-	}
-
-	export interface RenameProvider {
-		provideRenameEdits(model: editor.ITextModel, position: Position, newName: string, token: CancellationToken): ProviderResult<WorkspaceEdit & Rejection>;
-		resolveRenameLocation?(model: editor.ITextModel, position: Position, token: CancellationToken): ProviderResult<RenameLocation & Rejection>;
-	}
-
-	export interface Command {
-		id: string;
-		title: string;
-		tooltip?: string;
-		arguments?: any[];
-	}
-
-	export interface CodeLens {
-		range: IRange;
-		id?: string;
-		command?: Command;
-	}
-
-	export interface CodeLensList {
-		lenses: CodeLens[];
-		dispose(): void;
-	}
-
-	export interface CodeLensProvider {
-		onDidChange?: IEvent<this>;
-		provideCodeLenses(model: editor.ITextModel, token: CancellationToken): ProviderResult<CodeLensList>;
-		resolveCodeLens?(model: editor.ITextModel, codeLens: CodeLens, token: CancellationToken): ProviderResult<CodeLens>;
-	}
-
-	export enum InlayHintKind {
-		Other = 0,
-		Type = 1,
-		Parameter = 2
-	}
-
-	export interface InlayHintLabelPart {
-		label: string;
-		tooltip?: string | IMarkdownString;
-		command?: Command;
-		location?: Location;
-	}
-
-	export interface InlayHint {
-		label: string | InlayHintLabelPart[];
-		tooltip?: string | IMarkdownString;
-		position: IPosition;
-		kind: InlayHintKind;
-		paddingLeft?: boolean;
-		paddingRight?: boolean;
-	}
-
-	export interface InlayHintList {
-		hints: InlayHint[];
-		dispose(): void;
-	}
-
-	export interface InlayHintsProvider {
-		displayName?: string;
-		onDidChangeInlayHints?: IEvent<void>;
-		provideInlayHints(model: editor.ITextModel, range: Range, token: CancellationToken): ProviderResult<InlayHintList>;
-		resolveInlayHint?(hint: InlayHint, token: CancellationToken): ProviderResult<InlayHint>;
-	}
-
-	export interface SemanticTokensLegend {
-		readonly tokenTypes: string[];
-		readonly tokenModifiers: string[];
-	}
-
-	export interface SemanticTokens {
-		readonly resultId?: string;
-		readonly data: Uint32Array;
-	}
-
-	export interface SemanticTokensEdit {
-		readonly start: number;
-		readonly deleteCount: number;
-		readonly data?: Uint32Array;
-	}
-
-	export interface SemanticTokensEdits {
-		readonly resultId?: string;
-		readonly edits: SemanticTokensEdit[];
-	}
-
-	export interface DocumentSemanticTokensProvider {
-		onDidChange?: IEvent<void>;
-		getLegend(): SemanticTokensLegend;
-		provideDocumentSemanticTokens(model: editor.ITextModel, lastResultId: string | null, token: CancellationToken): ProviderResult<SemanticTokens | SemanticTokensEdits>;
-		releaseDocumentSemanticTokens(resultId: string | undefined): void;
-	}
-
-	export interface DocumentRangeSemanticTokensProvider {
-		getLegend(): SemanticTokensLegend;
-		provideDocumentRangeSemanticTokens(model: editor.ITextModel, range: Range, token: CancellationToken): ProviderResult<SemanticTokens>;
-	}
-
-	export interface ILanguageExtensionPoint {
-		id: string;
-		extensions?: string[];
-		filenames?: string[];
-		filenamePatterns?: string[];
-		firstLine?: string;
-		aliases?: string[];
-		mimetypes?: string[];
-		configuration?: Uri;
-	}
-	/**
-	 * A Monarch language definition
-	 */
-	export interface IMonarchLanguage {
-		/**
-		 * map from string to ILanguageRule[]
-		 */
-		tokenizer: {
-			[name: string]: IMonarchLanguageRule[];
+		readonly textIsBracket: {
+			[text: string]: RichEditBracket;
 		};
 		/**
-		 * is the language case insensitive?
+		 * A set useful for decoding if a regex match is the open bracket of a bracket pair.
 		 */
-		ignoreCase?: boolean;
-		/**
-		 * is the language unicode-aware? (i.e., /\u{1D306}/)
-		 */
-		unicode?: boolean;
-		/**
-		 * if no match in the tokenizer assign this token class (default 'source')
-		 */
-		defaultToken?: string;
-		/**
-		 * for example [['{','}','delimiter.curly']]
-		 */
-		brackets?: IMonarchLanguageBracket[];
-		/**
-		 * start symbol in the tokenizer (by default the first entry is used)
-		 */
-		start?: string;
-		/**
-		 * attach this to every token class (by default '.' + name)
-		 */
-		tokenPostfix?: string;
-		/**
-		 * include line feeds (in the form of a \n character) at the end of lines
-		 * Defaults to false
-		 */
-		includeLF?: boolean;
-		/**
-		 * Other keys that can be referred to by the tokenizer.
-		 */
-		[key: string]: any;
+		readonly textIsOpenBracket: {
+			[text: string]: boolean;
+		};
+		constructor(languageId: string, _brackets: readonly CharacterPair[]);
 	}
 
 	/**
-	 * A rule is either a regular expression and an action
-	 * 		shorthands: [reg,act] == { regex: reg, action: act}
-	 *		and       : [reg,act,nxt] == { regex: reg, action: act{ next: nxt }}
+	 * Represents a grouping of colliding bracket pairs.
+	 *
+	 * Most of the times this contains a single bracket pair,
+	 * but sometimes this contains multiple bracket pairs in cases
+	 * where the same string appears as a closing bracket for multiple
+	 * bracket pairs, or the same string appears an opening bracket for
+	 * multiple bracket pairs.
+	 *
+	 * e.g. of a group containing a single pair:
+	 *   open: ['{'], close: ['}']
+	 *
+	 * e.g. of a group containing multiple pairs:
+	 *   open: ['if', 'for'], close: ['end', 'end']
 	 */
-	export type IShortMonarchLanguageRule1 = [string | RegExp, IMonarchLanguageAction];
-
-	export type IShortMonarchLanguageRule2 = [string | RegExp, IMonarchLanguageAction, string];
-
-	export interface IExpandedMonarchLanguageRule {
+	export class RichEditBracket {
+		_richEditBracketBrand: void;
+		readonly languageId: string;
 		/**
-		 * match tokens
+		 * A 0-based consecutive unique identifier for this bracket pair.
+		 * If a language has 5 bracket pairs, out of which 2 are grouped together,
+		 * it is expected that the `index` goes from 0 to 4.
 		 */
-		regex?: string | RegExp;
+		readonly index: number;
 		/**
-		 * action to take on match
+		 * The open sequence for each bracket pair contained in this group.
+		 *
+		 * The open sequence at a specific index corresponds to the
+		 * closing sequence at the same index.
+		 *
+		 * [ open[i], closed[i] ] represent a bracket pair.
 		 */
-		action?: IMonarchLanguageAction;
+		readonly open: string[];
 		/**
-		 * or an include rule. include all rules from the included state
+		 * The close sequence for each bracket pair contained in this group.
+		 *
+		 * The close sequence at a specific index corresponds to the
+		 * opening sequence at the same index.
+		 *
+		 * [ open[i], closed[i] ] represent a bracket pair.
 		 */
-		include?: string;
+		readonly close: string[];
+		/**
+		 * A regular expression that is useful to search for this bracket pair group in a string.
+		 *
+		 * This regular expression is built in a way that it is aware of the other bracket
+		 * pairs defined for the language, so it might match brackets from other groups.
+		 *
+		 * See the fine details in `getRegexForBracketPair`.
+		 */
+		readonly forwardRegex: RegExp;
+		/**
+		 * A regular expression that is useful to search for this bracket pair group in a string backwards.
+		 *
+		 * This regular expression is built in a way that it is aware of the other bracket
+		 * pairs defined for the language, so it might match brackets from other groups.
+		 *
+		 * See the fine defails in `getReversedRegexForBracketPair`.
+		 */
+		readonly reversedRegex: RegExp;
+		constructor(languageId: string, index: number, open: string[], close: string[], forwardRegex: RegExp, reversedRegex: RegExp);
+		/**
+		 * Check if the provided `text` is an open bracket in this group.
+		 */
+		isOpen(text: string): any;
+		/**
+		 * Check if the provided `text` is a close bracket in this group.
+		 */
+		isClose(text: string): any;
 	}
 
-	export type IMonarchLanguageRule = IShortMonarchLanguageRule1 | IShortMonarchLanguageRule2 | IExpandedMonarchLanguageRule;
+	export class BracketElectricCharacterSupport {
+		constructor(richEditBrackets: RichEditBrackets | null);
+		getElectricCharacters(): string[];
+		onElectricCharacter(character: string, context: ScopedLineTokens, column: number): IElectricAction | null;
+	}
 
 	/**
-	 * An action is either an array of actions...
-	 * ... or a case statement with guards...
-	 * ... or a basic action with a token value.
+	 * Interface used to support electric characters
+	 * @internal
 	 */
-	export type IShortMonarchLanguageAction = string;
-
-	export interface IExpandedMonarchLanguageAction {
-		/**
-		 * array of actions for each parenthesized match group
-		 */
-		group?: IMonarchLanguageAction[];
-		/**
-		 * map from string to ILanguageAction
-		 */
-		cases?: Object;
-		/**
-		 * token class (ie. css class) (or "@brackets" or "@rematch")
-		 */
-		token?: string;
-		/**
-		 * the next state to push, or "@push", "@pop", "@popall"
-		 */
-		next?: string;
-		/**
-		 * switch to this state
-		 */
-		switchTo?: string;
-		/**
-		 * go back n characters in the stream
-		 */
-		goBack?: number;
-		/**
-		 * @open or @close
-		 */
-		bracket?: string;
-		/**
-		 * switch to embedded language (using the mimetype) or get out using "@pop"
-		 */
-		nextEmbedded?: string;
-		/**
-		 * log a message to the browser console window
-		 */
-		log?: string;
+	export interface IElectricAction {
+		matchOpenBracket: string;
 	}
 
-	export type IMonarchLanguageAction = IShortMonarchLanguageAction | IExpandedMonarchLanguageAction | IShortMonarchLanguageAction[] | IExpandedMonarchLanguageAction[];
-
-	/**
-	 * This interface can be shortened as an array, ie. ['{','}','delimiter.curly']
-	 */
-	export interface IMonarchLanguageBracket {
-		/**
-		 * open bracket
-		 */
-		open: string;
-		/**
-		 * closing bracket
-		 */
-		close: string;
-		/**
-		 * token class
-		 */
-		token: string;
+	export class ScopedLineTokens {
+		_scopedLineTokensBrand: void;
+		readonly languageId: string;
+		readonly firstCharOffset: number;
+		constructor(actual: LineTokens, languageId: string, firstTokenIndex: number, lastTokenIndex: number, firstCharOffset: number, lastCharOffset: number);
+		getLineContent(): string;
+		getActualLineContentBefore(offset: number): string;
+		getTokenCount(): number;
+		findTokenIndexAtOffset(offset: number): number;
+		getStandardTokenType(tokenIndex: number): StandardTokenType;
 	}
 
+	export class LineTokens implements IViewLineTokens {
+		_lineTokensBrand: void;
+		static defaultTokenMetadata: number;
+		static createEmpty(lineContent: string, decoder: ILanguageIdCodec): LineTokens;
+		constructor(tokens: Uint32Array, text: string, decoder: ILanguageIdCodec);
+		equals(other: IViewLineTokens): boolean;
+		slicedEquals(other: LineTokens, sliceFromTokenIndex: number, sliceTokenCount: number): boolean;
+		getLineContent(): string;
+		getCount(): number;
+		getStartOffset(tokenIndex: number): number;
+		getMetadata(tokenIndex: number): number;
+		getLanguageId(tokenIndex: number): string;
+		getStandardTokenType(tokenIndex: number): StandardTokenType;
+		getForeground(tokenIndex: number): ColorId;
+		getClassName(tokenIndex: number): string;
+		getInlineStyle(tokenIndex: number, colorMap: string[]): string;
+		getPresentation(tokenIndex: number): ITokenPresentation;
+		getEndOffset(tokenIndex: number): number;
+		/**
+		 * Find the token containing offset `offset`.
+		 * @param offset The search offset
+		 * @return The index of the token containing the offset.
+		 */
+		findTokenIndexAtOffset(offset: number): number;
+		inflate(): IViewLineTokens;
+		sliceAndInflate(startOffset: number, endOffset: number, deltaOffset: number): IViewLineTokens;
+		static convertToEndOffset(tokens: Uint32Array, lineTextLength: number): void;
+		static findIndexInTokensArray(tokens: Uint32Array, desiredIndex: number): number;
+		/**
+		 * @pure
+		 * @param insertTokens Must be sorted by offset.
+		*/
+		withInserted(insertTokens: {
+			offset: number;
+			text: string;
+			tokenMetadata: number;
+		}[]): LineTokens;
+	}
+
+	export interface IViewLineTokens {
+		equals(other: IViewLineTokens): boolean;
+		getCount(): number;
+		getForeground(tokenIndex: number): ColorId;
+		getEndOffset(tokenIndex: number): number;
+		getClassName(tokenIndex: number): string;
+		getInlineStyle(tokenIndex: number, colorMap: string[]): string;
+		getPresentation(tokenIndex: number): ITokenPresentation;
+		findTokenIndexAtOffset(offset: number): number;
+		getLineContent(): string;
+		getMetadata(tokenIndex: number): number;
+		getLanguageId(tokenIndex: number): string;
+	}
 }
 
 declare namespace monaco.worker {
@@ -7122,4 +8311,3020 @@ declare namespace monaco.worker {
 
 }
 
-//dtsv=3
+declare namespace monaco.extra {
+	export class SyncDescriptor<T> {
+		readonly ctor: any;
+		readonly staticArguments: any[];
+		readonly supportsDelayedInstantiation: boolean;
+		constructor(ctor: new (...args: any[]) => T, staticArguments?: any[], supportsDelayedInstantiation?: boolean);
+	}
+
+	export interface SyncDescriptor0<T> {
+		ctor: any;
+		bind(): SyncDescriptor0<T>;
+	}
+
+	export interface SyncDescriptor1<A1, T> {
+		ctor: any;
+		bind(a1: A1): SyncDescriptor0<T>;
+	}
+
+	export interface SyncDescriptor2<A1, A2, T> {
+		ctor: any;
+		bind(a1: A1): SyncDescriptor1<A2, T>;
+		bind(a1: A1, a2: A2): SyncDescriptor0<T>;
+	}
+
+	export interface SyncDescriptor3<A1, A2, A3, T> {
+		ctor: any;
+		bind(a1: A1): SyncDescriptor2<A2, A3, T>;
+		bind(a1: A1, a2: A2): SyncDescriptor1<A3, T>;
+		bind(a1: A1, a2: A2, a3: A3): SyncDescriptor0<T>;
+	}
+
+	export interface SyncDescriptor4<A1, A2, A3, A4, T> {
+		ctor: any;
+		bind(a1: A1): SyncDescriptor3<A2, A3, A4, T>;
+		bind(a1: A1, a2: A2): SyncDescriptor2<A3, A4, T>;
+		bind(a1: A1, a2: A2, a3: A3): SyncDescriptor1<A4, T>;
+		bind(a1: A1, a2: A2, a3: A3, a4: A4): SyncDescriptor0<T>;
+	}
+
+	export interface SyncDescriptor5<A1, A2, A3, A4, A5, T> {
+		ctor: any;
+		bind(a1: A1): SyncDescriptor4<A2, A3, A4, A5, T>;
+		bind(a1: A1, a2: A2): SyncDescriptor3<A3, A4, A5, T>;
+		bind(a1: A1, a2: A2, a3: A3): SyncDescriptor2<A4, A5, T>;
+		bind(a1: A1, a2: A2, a3: A3, a4: A4): SyncDescriptor1<A5, T>;
+		bind(a1: A1, a2: A2, a3: A3, a4: A4, a5: A5): SyncDescriptor0<T>;
+	}
+
+	export interface SyncDescriptor6<A1, A2, A3, A4, A5, A6, T> {
+		ctor: any;
+		bind(a1: A1): SyncDescriptor5<A2, A3, A4, A5, A6, T>;
+		bind(a1: A1, a2: A2): SyncDescriptor4<A3, A4, A5, A6, T>;
+		bind(a1: A1, a2: A2, a3: A3): SyncDescriptor3<A4, A5, A6, T>;
+		bind(a1: A1, a2: A2, a3: A3, a4: A4): SyncDescriptor2<A5, A6, T>;
+		bind(a1: A1, a2: A2, a3: A3, a4: A4, a5: A5): SyncDescriptor1<A6, T>;
+		bind(a1: A1, a2: A2, a3: A3, a4: A4, a5: A5, a6: A6): SyncDescriptor0<T>;
+	}
+
+	export interface SyncDescriptor7<A1, A2, A3, A4, A5, A6, A7, T> {
+		ctor: any;
+		bind(a1: A1): SyncDescriptor6<A2, A3, A4, A5, A6, A7, T>;
+		bind(a1: A1, a2: A2): SyncDescriptor5<A3, A4, A5, A6, A7, T>;
+		bind(a1: A1, a2: A2, a3: A3): SyncDescriptor4<A4, A5, A6, A7, T>;
+		bind(a1: A1, a2: A2, a3: A3, a4: A4): SyncDescriptor3<A5, A6, A7, T>;
+		bind(a1: A1, a2: A2, a3: A3, a4: A4, a5: A5): SyncDescriptor2<A6, A7, T>;
+		bind(a1: A1, a2: A2, a3: A3, a4: A4, a5: A5, a6: A6): SyncDescriptor1<A7, T>;
+		bind(a1: A1, a2: A2, a3: A3, a4: A4, a5: A5, a6: A6, a7: A7): SyncDescriptor0<T>;
+	}
+
+	export interface SyncDescriptor8<A1, A2, A3, A4, A5, A6, A7, A8, T> {
+		ctor: any;
+		bind(a1: A1): SyncDescriptor7<A2, A3, A4, A5, A6, A7, A8, T>;
+		bind(a1: A1, a2: A2): SyncDescriptor6<A3, A4, A5, A6, A7, A8, T>;
+		bind(a1: A1, a2: A2, a3: A3): SyncDescriptor5<A4, A5, A6, A7, A8, T>;
+		bind(a1: A1, a2: A2, a3: A3, a4: A4): SyncDescriptor4<A5, A6, A7, A8, T>;
+		bind(a1: A1, a2: A2, a3: A3, a4: A4, a5: A5): SyncDescriptor3<A6, A7, A8, T>;
+		bind(a1: A1, a2: A2, a3: A3, a4: A4, a5: A5, a6: A6): SyncDescriptor2<A7, A8, T>;
+		bind(a1: A1, a2: A2, a3: A3, a4: A4, a5: A5, a6: A6, a7: A7): SyncDescriptor1<A8, T>;
+		bind(a1: A1, a2: A2, a3: A3, a4: A4, a5: A5, a6: A6, a7: A7, a8: A8): SyncDescriptor0<T>;
+	}
+
+	export type BrandedService = {
+		_serviceBrand: undefined;
+	};
+
+	export interface IConstructorSignature0<T> {
+		new (...services: BrandedService[]): T;
+	}
+
+	export interface IConstructorSignature1<A1, T> {
+		new <Services extends BrandedService[]>(first: A1, ...services: Services): T;
+	}
+
+	export interface IConstructorSignature2<A1, A2, T> {
+		new (first: A1, second: A2, ...services: BrandedService[]): T;
+	}
+
+	export interface IConstructorSignature3<A1, A2, A3, T> {
+		new (first: A1, second: A2, third: A3, ...services: BrandedService[]): T;
+	}
+
+	export interface IConstructorSignature4<A1, A2, A3, A4, T> {
+		new (first: A1, second: A2, third: A3, fourth: A4, ...services: BrandedService[]): T;
+	}
+
+	export interface IConstructorSignature5<A1, A2, A3, A4, A5, T> {
+		new (first: A1, second: A2, third: A3, fourth: A4, fifth: A5, ...services: BrandedService[]): T;
+	}
+
+	export interface IConstructorSignature6<A1, A2, A3, A4, A5, A6, T> {
+		new (first: A1, second: A2, third: A3, fourth: A4, fifth: A5, sixth: A6, ...services: BrandedService[]): T;
+	}
+
+	export interface IConstructorSignature7<A1, A2, A3, A4, A5, A6, A7, T> {
+		new (first: A1, second: A2, third: A3, fourth: A4, fifth: A5, sixth: A6, seventh: A7, ...services: BrandedService[]): T;
+	}
+
+	export interface IConstructorSignature8<A1, A2, A3, A4, A5, A6, A7, A8, T> {
+		new (first: A1, second: A2, third: A3, fourth: A4, fifth: A5, sixth: A6, seventh: A7, eigth: A8, ...services: BrandedService[]): T;
+	}
+
+	export interface ServicesAccessor {
+		get<T>(id: ServiceIdentifier<T>): T;
+	}
+
+	/**
+	 * Given a list of arguments as a tuple, attempt to extract the leading, non-service arguments
+	 * to their own tuple.
+	 */
+	type GetLeadingNonServiceArgs<Args> = Args extends [...BrandedService[]] ? [] : Args extends [infer A1, ...BrandedService[]] ? [A1] : Args extends [infer A1, infer A2, ...BrandedService[]] ? [A1, A2] : Args extends [infer A1, infer A2, infer A3, ...BrandedService[]] ? [A1, A2, A3] : Args extends [infer A1, infer A2, infer A3, infer A4, ...BrandedService[]] ? [A1, A2, A3, A4] : Args extends [infer A1, infer A2, infer A3, infer A4, infer A5, ...BrandedService[]] ? [A1, A2, A3, A4, A5] : Args extends [infer A1, infer A2, infer A3, infer A4, infer A5, infer A6, ...BrandedService[]] ? [A1, A2, A3, A4, A5, A6] : Args extends [infer A1, infer A2, infer A3, infer A4, infer A5, infer A6, infer A7, ...BrandedService[]] ? [A1, A2, A3, A4, A5, A6, A7] : Args extends [infer A1, infer A2, infer A3, infer A4, infer A5, infer A6, infer A7, infer A8, ...BrandedService[]] ? [A1, A2, A3, A4, A5, A6, A7, A8] : never;
+
+	export interface IInstantiationService {
+		readonly _serviceBrand: undefined;
+		/**
+		 * Synchronously creates an instance that is denoted by
+		 * the descriptor
+		 */
+		createInstance<T>(descriptor: SyncDescriptor0<T>): T;
+		createInstance<A1, T>(descriptor: SyncDescriptor1<A1, T>, a1: A1): T;
+		createInstance<A1, A2, T>(descriptor: SyncDescriptor2<A1, A2, T>, a1: A1, a2: A2): T;
+		createInstance<A1, A2, A3, T>(descriptor: SyncDescriptor3<A1, A2, A3, T>, a1: A1, a2: A2, a3: A3): T;
+		createInstance<A1, A2, A3, A4, T>(descriptor: SyncDescriptor4<A1, A2, A3, A4, T>, a1: A1, a2: A2, a3: A3, a4: A4): T;
+		createInstance<A1, A2, A3, A4, A5, T>(descriptor: SyncDescriptor5<A1, A2, A3, A4, A5, T>, a1: A1, a2: A2, a3: A3, a4: A4, a5: A5): T;
+		createInstance<A1, A2, A3, A4, A5, A6, T>(descriptor: SyncDescriptor6<A1, A2, A3, A4, A5, A6, T>, a1: A1, a2: A2, a3: A3, a4: A4, a5: A5, a6: A6): T;
+		createInstance<A1, A2, A3, A4, A5, A6, A7, T>(descriptor: SyncDescriptor7<A1, A2, A3, A4, A5, A6, A7, T>, a1: A1, a2: A2, a3: A3, a4: A4, a5: A5, a6: A6, a7: A7): T;
+		createInstance<A1, A2, A3, A4, A5, A6, A7, A8, T>(descriptor: SyncDescriptor8<A1, A2, A3, A4, A5, A6, A7, A8, T>, a1: A1, a2: A2, a3: A3, a4: A4, a5: A5, a6: A6, a7: A7, a8: A8): T;
+		createInstance<Ctor extends new (...args: any[]) => any, R extends InstanceType<Ctor>>(t: Ctor, ...args: GetLeadingNonServiceArgs<ConstructorParameters<Ctor>>): R;
+		/**
+		 *
+		 */
+		invokeFunction<R, TS extends any[] = []>(fn: (accessor: ServicesAccessor, ...args: TS) => R, ...args: TS): R;
+		/**
+		 * Creates a child of this service which inherts all current services
+		 * and adds/overwrites the given services
+		 */
+		createChild(services: ServiceCollection): IInstantiationService;
+	}
+
+	/**
+	 * Identifies a service of type T
+	 */
+	export interface ServiceIdentifier<T> {
+		(...args: any[]): void;
+		type: T;
+	}
+
+	export class ServiceCollection {
+		constructor(...entries: [ServiceIdentifier<any>, any][]);
+		set<T>(id: ServiceIdentifier<T>, instanceOrDescriptor: T | SyncDescriptor<T>): T | SyncDescriptor<T>;
+		has(id: ServiceIdentifier<any>): boolean;
+		get<T>(id: ServiceIdentifier<T>): T | SyncDescriptor<T>;
+	}
+
+	/**
+	 * We don't want to eagerly instantiate services because embedders get a one time chance
+	 * to override services when they create the first editor.
+	 */
+	export module StandaloneServices {
+		function get<T>(serviceId: ServiceIdentifier<T>): T;
+		function initialize(overrides: editor.IEditorOverrideServices): IInstantiationService;
+	}
+
+	export function once<T extends Function>(this: unknown, fn: T): T;
+
+	export interface IReference<T> extends IDisposable {
+		readonly object: T;
+	}
+
+	export abstract class ReferenceCollection<T> {
+		acquire(key: string, ...args: any[]): IReference<T>;
+		protected abstract createReferencedObject(key: string, ...args: any[]): T;
+		protected abstract destroyReferencedObject(key: string, object: T): void;
+	}
+
+	/**
+	 * Unwraps a reference collection of promised values. Makes sure
+	 * references are disposed whenever promises get rejected.
+	 */
+	export class AsyncReferenceCollection<T> {
+		constructor(referenceCollection: ReferenceCollection<Promise<T>>);
+		acquire(key: string, ...args: any[]): Promise<IReference<T>>;
+	}
+
+	export function toDisposable(fn: () => void): IDisposable;
+
+	export interface Modifiers {
+		readonly ctrlKey: boolean;
+		readonly shiftKey: boolean;
+		readonly altKey: boolean;
+		readonly metaKey: boolean;
+	}
+
+	export interface IBaseKeybinding extends Modifiers {
+		isDuplicateModifierCase(): boolean;
+	}
+
+	export class SimpleKeybinding implements IBaseKeybinding {
+		readonly ctrlKey: boolean;
+		readonly shiftKey: boolean;
+		readonly altKey: boolean;
+		readonly metaKey: boolean;
+		readonly keyCode: KeyCode;
+		constructor(ctrlKey: boolean, shiftKey: boolean, altKey: boolean, metaKey: boolean, keyCode: KeyCode);
+		equals(other: SimpleKeybinding): boolean;
+		getHashCode(): string;
+		isModifierKey(): boolean;
+		toChord(): ChordKeybinding;
+		/**
+		 * Does this keybinding refer to the key code of a modifier and it also has the modifier flag?
+		 */
+		isDuplicateModifierCase(): boolean;
+	}
+
+	export class ChordKeybinding {
+		readonly parts: SimpleKeybinding[];
+		constructor(parts: SimpleKeybinding[]);
+		getHashCode(): string;
+		equals(other: ChordKeybinding | null): boolean;
+	}
+
+	export type Keybinding = ChordKeybinding;
+
+	/**
+	 * A resolved keybinding. Can be a simple keybinding or a chord keybinding.
+	 */
+	export abstract class ResolvedKeybinding {
+		/**
+		 * This prints the binding in a format suitable for displaying in the UI.
+		 */
+		abstract getLabel(): string | null;
+		/**
+		 * This prints the binding in a format suitable for ARIA.
+		 */
+		abstract getAriaLabel(): string | null;
+		/**
+		 * This prints the binding in a format suitable for electron's accelerators.
+		 * See https://github.com/electron/electron/blob/master/docs/api/accelerator.md
+		 */
+		abstract getElectronAccelerator(): string | null;
+		/**
+		 * This prints the binding in a format suitable for user settings.
+		 */
+		abstract getUserSettingsLabel(): string | null;
+		/**
+		 * Is the user settings label reflecting the label?
+		 */
+		abstract isWYSIWYG(): boolean;
+		/**
+		 * Is the binding a chord?
+		 */
+		abstract isChord(): boolean;
+		/**
+		 * Returns the parts that comprise of the keybinding.
+		 * Simple keybindings return one element.
+		 */
+		abstract getParts(): ResolvedKeybindingPart[];
+		/**
+		 * Returns the parts that should be used for dispatching.
+		 * Returns null for parts consisting of only modifier keys
+		 * @example keybinding "Shift" -> null
+		 * @example keybinding ("D" with shift == true) -> "shift+D"
+		 */
+		abstract getDispatchParts(): (string | null)[];
+		/**
+		 * Returns the parts that should be used for dispatching single modifier keys
+		 * Returns null for parts that contain more than one modifier or a regular key.
+		 * @example keybinding "Shift" -> "shift"
+		 * @example keybinding ("D" with shift == true") -> null
+		 */
+		abstract getSingleModifierDispatchParts(): (KeybindingModifier | null)[];
+	}
+
+	export class ResolvedKeybindingPart {
+		readonly ctrlKey: boolean;
+		readonly shiftKey: boolean;
+		readonly altKey: boolean;
+		readonly metaKey: boolean;
+		readonly keyLabel: string | null;
+		readonly keyAriaLabel: string | null;
+		constructor(ctrlKey: boolean, shiftKey: boolean, altKey: boolean, metaKey: boolean, kbLabel: string | null, kbAriaLabel: string | null);
+	}
+
+	export type KeybindingModifier = 'ctrl' | 'shift' | 'alt' | 'meta';
+
+	export class ScanCodeBinding implements IBaseKeybinding {
+		readonly ctrlKey: boolean;
+		readonly shiftKey: boolean;
+		readonly altKey: boolean;
+		readonly metaKey: boolean;
+		readonly scanCode: ScanCode;
+		constructor(ctrlKey: boolean, shiftKey: boolean, altKey: boolean, metaKey: boolean, scanCode: ScanCode);
+		equals(other: ScanCodeBinding): boolean;
+		/**
+		 * Does this keybinding refer to the key code of a modifier and it also has the modifier flag?
+		 */
+		isDuplicateModifierCase(): boolean;
+	}
+
+	export namespace KeyCodeUtils {
+		function toString(keyCode: KeyCode): string;
+		function fromString(key: string): KeyCode;
+		function toUserSettingsUS(keyCode: KeyCode): string;
+		function toUserSettingsGeneral(keyCode: KeyCode): string;
+		function fromUserSettings(key: string): KeyCode;
+		function toElectronAccelerator(keyCode: KeyCode): string | null;
+	}
+
+	/**
+	 * keyboardEvent.code
+	 */
+	export enum ScanCode {
+		DependsOnKbLayout = -1,
+		None = 0,
+		Hyper = 1,
+		Super = 2,
+		Fn = 3,
+		FnLock = 4,
+		Suspend = 5,
+		Resume = 6,
+		Turbo = 7,
+		Sleep = 8,
+		WakeUp = 9,
+		KeyA = 10,
+		KeyB = 11,
+		KeyC = 12,
+		KeyD = 13,
+		KeyE = 14,
+		KeyF = 15,
+		KeyG = 16,
+		KeyH = 17,
+		KeyI = 18,
+		KeyJ = 19,
+		KeyK = 20,
+		KeyL = 21,
+		KeyM = 22,
+		KeyN = 23,
+		KeyO = 24,
+		KeyP = 25,
+		KeyQ = 26,
+		KeyR = 27,
+		KeyS = 28,
+		KeyT = 29,
+		KeyU = 30,
+		KeyV = 31,
+		KeyW = 32,
+		KeyX = 33,
+		KeyY = 34,
+		KeyZ = 35,
+		Digit1 = 36,
+		Digit2 = 37,
+		Digit3 = 38,
+		Digit4 = 39,
+		Digit5 = 40,
+		Digit6 = 41,
+		Digit7 = 42,
+		Digit8 = 43,
+		Digit9 = 44,
+		Digit0 = 45,
+		Enter = 46,
+		Escape = 47,
+		Backspace = 48,
+		Tab = 49,
+		Space = 50,
+		Minus = 51,
+		Equal = 52,
+		BracketLeft = 53,
+		BracketRight = 54,
+		Backslash = 55,
+		IntlHash = 56,
+		Semicolon = 57,
+		Quote = 58,
+		Backquote = 59,
+		Comma = 60,
+		Period = 61,
+		Slash = 62,
+		CapsLock = 63,
+		F1 = 64,
+		F2 = 65,
+		F3 = 66,
+		F4 = 67,
+		F5 = 68,
+		F6 = 69,
+		F7 = 70,
+		F8 = 71,
+		F9 = 72,
+		F10 = 73,
+		F11 = 74,
+		F12 = 75,
+		PrintScreen = 76,
+		ScrollLock = 77,
+		Pause = 78,
+		Insert = 79,
+		Home = 80,
+		PageUp = 81,
+		Delete = 82,
+		End = 83,
+		PageDown = 84,
+		ArrowRight = 85,
+		ArrowLeft = 86,
+		ArrowDown = 87,
+		ArrowUp = 88,
+		NumLock = 89,
+		NumpadDivide = 90,
+		NumpadMultiply = 91,
+		NumpadSubtract = 92,
+		NumpadAdd = 93,
+		NumpadEnter = 94,
+		Numpad1 = 95,
+		Numpad2 = 96,
+		Numpad3 = 97,
+		Numpad4 = 98,
+		Numpad5 = 99,
+		Numpad6 = 100,
+		Numpad7 = 101,
+		Numpad8 = 102,
+		Numpad9 = 103,
+		Numpad0 = 104,
+		NumpadDecimal = 105,
+		IntlBackslash = 106,
+		ContextMenu = 107,
+		Power = 108,
+		NumpadEqual = 109,
+		F13 = 110,
+		F14 = 111,
+		F15 = 112,
+		F16 = 113,
+		F17 = 114,
+		F18 = 115,
+		F19 = 116,
+		F20 = 117,
+		F21 = 118,
+		F22 = 119,
+		F23 = 120,
+		F24 = 121,
+		Open = 122,
+		Help = 123,
+		Select = 124,
+		Again = 125,
+		Undo = 126,
+		Cut = 127,
+		Copy = 128,
+		Paste = 129,
+		Find = 130,
+		AudioVolumeMute = 131,
+		AudioVolumeUp = 132,
+		AudioVolumeDown = 133,
+		NumpadComma = 134,
+		IntlRo = 135,
+		KanaMode = 136,
+		IntlYen = 137,
+		Convert = 138,
+		NonConvert = 139,
+		Lang1 = 140,
+		Lang2 = 141,
+		Lang3 = 142,
+		Lang4 = 143,
+		Lang5 = 144,
+		Abort = 145,
+		Props = 146,
+		NumpadParenLeft = 147,
+		NumpadParenRight = 148,
+		NumpadBackspace = 149,
+		NumpadMemoryStore = 150,
+		NumpadMemoryRecall = 151,
+		NumpadMemoryClear = 152,
+		NumpadMemoryAdd = 153,
+		NumpadMemorySubtract = 154,
+		NumpadClear = 155,
+		NumpadClearEntry = 156,
+		ControlLeft = 157,
+		ShiftLeft = 158,
+		AltLeft = 159,
+		MetaLeft = 160,
+		ControlRight = 161,
+		ShiftRight = 162,
+		AltRight = 163,
+		MetaRight = 164,
+		BrightnessUp = 165,
+		BrightnessDown = 166,
+		MediaPlay = 167,
+		MediaRecord = 168,
+		MediaFastForward = 169,
+		MediaRewind = 170,
+		MediaTrackNext = 171,
+		MediaTrackPrevious = 172,
+		MediaStop = 173,
+		Eject = 174,
+		MediaPlayPause = 175,
+		MediaSelect = 176,
+		LaunchMail = 177,
+		LaunchApp2 = 178,
+		LaunchApp1 = 179,
+		SelectTask = 180,
+		LaunchScreenSaver = 181,
+		BrowserSearch = 182,
+		BrowserHome = 183,
+		BrowserBack = 184,
+		BrowserForward = 185,
+		BrowserStop = 186,
+		BrowserRefresh = 187,
+		BrowserFavorites = 188,
+		ZoomToggle = 189,
+		MailReply = 190,
+		MailForward = 191,
+		MailSend = 192,
+		MAX_VALUE = 193
+	}
+
+	export interface IKeyboardMapper {
+		dumpDebugInfo(): string;
+		resolveKeybinding(keybinding: Keybinding): ResolvedKeybinding[];
+		resolveKeyboardEvent(keyboardEvent: IKeyboardEvent): ResolvedKeybinding;
+		resolveUserBinding(parts: (SimpleKeybinding | ScanCodeBinding)[]): ResolvedKeybinding[];
+	}
+
+	/**
+	 * A keyboard mapper to be used when reading the keymap from the OS fails.
+	 */
+	export class MacLinuxFallbackKeyboardMapper implements IKeyboardMapper {
+		constructor(OS: OperatingSystem);
+		dumpDebugInfo(): string;
+		resolveKeybinding(keybinding: Keybinding): ResolvedKeybinding[];
+		resolveKeyboardEvent(keyboardEvent: IKeyboardEvent): ResolvedKeybinding;
+		resolveUserBinding(input: (SimpleKeybinding | ScanCodeBinding)[]): ResolvedKeybinding[];
+	}
+
+	export const IConfigurationService: ServiceIdentifier<IConfigurationService>;
+
+	export interface IConfigurationOverrides {
+		overrideIdentifier?: string | null;
+		resource?: Uri | null;
+	}
+
+	export type IConfigurationUpdateOverrides = Omit<IConfigurationOverrides, 'overrideIdentifier'> & {
+		overrideIdentifiers?: string[] | null;
+	};
+
+	export enum ConfigurationTarget {
+		USER = 1,
+		USER_LOCAL = 2,
+		USER_REMOTE = 3,
+		WORKSPACE = 4,
+		WORKSPACE_FOLDER = 5,
+		DEFAULT = 6,
+		MEMORY = 7
+	}
+
+	export interface IConfigurationChange {
+		keys: string[];
+		overrides: [string, string[]][];
+	}
+
+	export interface IConfigurationChangeEvent {
+		readonly source: ConfigurationTarget;
+		readonly affectedKeys: string[];
+		readonly change: IConfigurationChange;
+		affectsConfiguration(configuration: string, overrides?: IConfigurationOverrides): boolean;
+		readonly sourceConfig: any;
+	}
+
+	export interface IConfigurationValue<T> {
+		readonly defaultValue?: T;
+		readonly userValue?: T;
+		readonly userLocalValue?: T;
+		readonly userRemoteValue?: T;
+		readonly workspaceValue?: T;
+		readonly workspaceFolderValue?: T;
+		readonly memoryValue?: T;
+		readonly value?: T;
+		readonly default?: {
+			value?: T;
+			override?: T;
+		};
+		readonly user?: {
+			value?: T;
+			override?: T;
+		};
+		readonly userLocal?: {
+			value?: T;
+			override?: T;
+		};
+		readonly userRemote?: {
+			value?: T;
+			override?: T;
+		};
+		readonly workspace?: {
+			value?: T;
+			override?: T;
+		};
+		readonly workspaceFolder?: {
+			value?: T;
+			override?: T;
+		};
+		readonly memory?: {
+			value?: T;
+			override?: T;
+		};
+		readonly overrideIdentifiers?: string[];
+	}
+
+	export interface IConfigurationService {
+		readonly _serviceBrand: undefined;
+		getConfigurationData(): IConfigurationData | null;
+		/**
+		 * Fetches the value of the section for the given overrides.
+		 * Value can be of native type or an object keyed off the section name.
+		 *
+		 * @param section - Section of the configuraion. Can be `null` or `undefined`.
+		 * @param overrides - Overrides that has to be applied while fetching
+		 *
+		 */
+		getValue<T>(): T;
+		getValue<T>(section: string): T;
+		getValue<T>(overrides: IConfigurationOverrides): T;
+		getValue<T>(section: string, overrides: IConfigurationOverrides): T;
+		/**
+		 * Update a configuration value.
+		 *
+		 * Use `target` to update the configuration in a specific `ConfigurationTarget`.
+		 *
+		 * Use `overrides` to update the configuration for a resource or for override identifiers or both.
+		 *
+		 * Passing a resource through overrides will update the configuration in the workspace folder containing that resource.
+		 *
+		 * *Note 1:* Updating configuraiton to a default value will remove the configuration from the requested target. If not target is passed, it will be removed from all writeable targets.
+		 *
+		 * *Note 2:* Use `undefined` value to remove the configuration from the given target. If not target is passed, it will be removed from all writeable targets.
+		 *
+		 * Use `donotNotifyError` and set it to `true` to surpresss errors.
+		 *
+		 * @param key setting to be updated
+		 * @param value The new value
+		 */
+		updateValue(key: string, value: any): Promise<void>;
+		updateValue(key: string, value: any, target: ConfigurationTarget): Promise<void>;
+		updateValue(key: string, value: any, overrides: IConfigurationOverrides | IConfigurationUpdateOverrides): Promise<void>;
+		updateValue(key: string, value: any, overrides: IConfigurationOverrides | IConfigurationUpdateOverrides, target: ConfigurationTarget, donotNotifyError?: boolean): Promise<void>;
+		inspect<T>(key: string, overrides?: IConfigurationOverrides): IConfigurationValue<Readonly<T>>;
+		keys(): {
+			default: string[];
+			user: string[];
+			workspace: string[];
+			workspaceFolder: string[];
+			memory?: string[];
+		};
+	}
+
+	export interface IConfigurationModel {
+		contents: any;
+		keys: string[];
+		overrides: IOverrides[];
+	}
+
+	export interface IOverrides {
+		keys: string[];
+		contents: any;
+		identifiers: string[];
+	}
+
+	export interface IConfigurationData {
+		defaults: IConfigurationModel;
+		user: IConfigurationModel;
+		workspace: IConfigurationModel;
+		folders: [UriComponents, IConfigurationModel][];
+	}
+
+	export interface IConfigurationCompareResult {
+		added: string[];
+		removed: string[];
+		updated: string[];
+		overrides: [string, string[]][];
+	}
+
+	export function addToValueTree(settingsTreeRoot: any, key: string, value: any, conflictReporter: (message: string) => void): void;
+
+	export class ConfigurationModel implements IConfigurationModel {
+		constructor(_contents?: any, _keys?: string[], _overrides?: IOverrides[]);
+		get contents(): any;
+		get overrides(): IOverrides[];
+		get keys(): string[];
+		isEmpty(): boolean;
+		getValue<V>(section: string | undefined): V;
+		getOverrideValue<V>(section: string | undefined, overrideIdentifier: string): V | undefined;
+		getKeysForOverrideIdentifier(identifier: string): string[];
+		getAllOverrideIdentifiers(): string[];
+		override(identifier: string): ConfigurationModel;
+		merge(...others: ConfigurationModel[]): ConfigurationModel;
+		freeze(): ConfigurationModel;
+		toJSON(): IConfigurationModel;
+		setValue(key: string, value: any): void;
+		removeValue(key: string): void;
+	}
+
+	export class DefaultConfigurationModel extends ConfigurationModel {
+		constructor(configurationDefaultsOverrides?: IStringDictionary<any>);
+	}
+
+	export interface IAction extends IDisposable {
+		readonly id: string;
+		label: string;
+		tooltip: string;
+		class: string | undefined;
+		enabled: boolean;
+		checked?: boolean;
+		run(event?: unknown): unknown;
+	}
+
+	/**
+	 * A progress service that can be used to report progress to various locations of the UI.
+	 */
+	export interface IProgressService {
+		readonly _serviceBrand: undefined;
+		withProgress<R>(options: IProgressOptions | IProgressDialogOptions | IProgressNotificationOptions | IProgressWindowOptions | IProgressCompositeOptions, task: (progress: IProgress<IProgressStep>) => Promise<R>, onDidCancel?: (choice?: number) => void): Promise<R>;
+	}
+
+	export enum ProgressLocation {
+		Explorer = 1,
+		Scm = 3,
+		Extensions = 5,
+		Window = 10,
+		Notification = 15,
+		Dialog = 20
+	}
+
+	export interface IProgressOptions {
+		readonly location: ProgressLocation | string;
+		readonly title?: string;
+		readonly source?: string | {
+			label: string;
+			id: string;
+		};
+		readonly total?: number;
+		readonly cancellable?: boolean;
+		readonly buttons?: string[];
+	}
+
+	export interface IProgressNotificationOptions extends IProgressOptions {
+		readonly location: ProgressLocation.Notification;
+		readonly primaryActions?: readonly IAction[];
+		readonly secondaryActions?: readonly IAction[];
+		readonly delay?: number;
+		readonly silent?: boolean;
+	}
+
+	export interface IProgressDialogOptions extends IProgressOptions {
+		readonly delay?: number;
+		readonly detail?: string;
+		readonly sticky?: boolean;
+	}
+
+	export interface IProgressWindowOptions extends IProgressOptions {
+		readonly location: ProgressLocation.Window;
+		readonly command?: string;
+	}
+
+	export interface IProgressCompositeOptions extends IProgressOptions {
+		readonly location: ProgressLocation.Explorer | ProgressLocation.Extensions | ProgressLocation.Scm | string;
+		readonly delay?: number;
+	}
+
+	export interface IProgressStep {
+		message?: string;
+		increment?: number;
+		total?: number;
+	}
+
+	export interface IProgress<T> {
+		report(item: T): void;
+	}
+
+	/**
+	 * An interface for a JavaScript object that
+	 * acts a dictionary. The keys are strings.
+	 */
+	export type IStringDictionary<V> = Record<string, V>;
+	export type JSONSchemaType = 'string' | 'number' | 'integer' | 'boolean' | 'null' | 'array' | 'object';
+
+	export interface IJSONSchema {
+		id?: string;
+		$id?: string;
+		$schema?: string;
+		type?: JSONSchemaType | JSONSchemaType[];
+		title?: string;
+		default?: any;
+		definitions?: IJSONSchemaMap;
+		description?: string;
+		properties?: IJSONSchemaMap;
+		patternProperties?: IJSONSchemaMap;
+		additionalProperties?: boolean | IJSONSchema;
+		minProperties?: number;
+		maxProperties?: number;
+		dependencies?: IJSONSchemaMap | {
+			[prop: string]: string[];
+		};
+		items?: IJSONSchema | IJSONSchema[];
+		minItems?: number;
+		maxItems?: number;
+		uniqueItems?: boolean;
+		additionalItems?: boolean | IJSONSchema;
+		pattern?: string;
+		minLength?: number;
+		maxLength?: number;
+		minimum?: number;
+		maximum?: number;
+		exclusiveMinimum?: boolean | number;
+		exclusiveMaximum?: boolean | number;
+		multipleOf?: number;
+		required?: string[];
+		$ref?: string;
+		anyOf?: IJSONSchema[];
+		allOf?: IJSONSchema[];
+		oneOf?: IJSONSchema[];
+		not?: IJSONSchema;
+		enum?: any[];
+		format?: string;
+		const?: any;
+		contains?: IJSONSchema;
+		propertyNames?: IJSONSchema;
+		$comment?: string;
+		if?: IJSONSchema;
+		then?: IJSONSchema;
+		else?: IJSONSchema;
+		defaultSnippets?: IJSONSchemaSnippet[];
+		errorMessage?: string;
+		patternErrorMessage?: string;
+		deprecationMessage?: string;
+		markdownDeprecationMessage?: string;
+		enumDescriptions?: string[];
+		markdownEnumDescriptions?: string[];
+		markdownDescription?: string;
+		doNotSuggest?: boolean;
+		suggestSortText?: string;
+		allowComments?: boolean;
+		allowTrailingCommas?: boolean;
+	}
+
+	export interface IJSONSchemaMap {
+		[name: string]: IJSONSchema;
+	}
+
+	export interface IJSONSchemaSnippet {
+		label?: string;
+		description?: string;
+		body?: any;
+		bodyText?: string;
+	}
+
+	export const Registry: IRegistry;
+	export interface IRegistry {
+		/**
+		 * Adds the extension functions and properties defined by data to the
+		 * platform. The provided id must be unique.
+		 * @param id a unique identifier
+		 * @param data a contribution
+		 */
+		add(id: string, data: any): void;
+		/**
+		 * Returns true iff there is an extension with the provided id.
+		 * @param id an extension identifier
+		 */
+		knows(id: string): boolean;
+		/**
+		 * Returns the extension functions and properties defined by the specified key or null.
+		 * @param id an extension identifier
+		 */
+		as<T>(id: string): T;
+	}
+
+	export enum ContextKeyExprType {
+		False = 0,
+		True = 1,
+		Defined = 2,
+		Not = 3,
+		Equals = 4,
+		NotEquals = 5,
+		And = 6,
+		Regex = 7,
+		NotRegex = 8,
+		Or = 9,
+		In = 10,
+		NotIn = 11,
+		Greater = 12,
+		GreaterEquals = 13,
+		Smaller = 14,
+		SmallerEquals = 15
+	}
+
+	export interface IContextKeyExprMapper {
+		mapDefined(key: string): ContextKeyExpression;
+		mapNot(key: string): ContextKeyExpression;
+		mapEquals(key: string, value: any): ContextKeyExpression;
+		mapNotEquals(key: string, value: any): ContextKeyExpression;
+		mapGreater(key: string, value: any): ContextKeyExpression;
+		mapGreaterEquals(key: string, value: any): ContextKeyExpression;
+		mapSmaller(key: string, value: any): ContextKeyExpression;
+		mapSmallerEquals(key: string, value: any): ContextKeyExpression;
+		mapRegex(key: string, regexp: RegExp | null): ContextKeyRegexExpr;
+		mapIn(key: string, valueKey: string): ContextKeyInExpr;
+	}
+
+	export interface IContextKeyExpression {
+		cmp(other: ContextKeyExpression): number;
+		equals(other: ContextKeyExpression): boolean;
+		substituteConstants(): ContextKeyExpression | undefined;
+		evaluate(context: IContext): boolean;
+		serialize(): string;
+		keys(): string[];
+		map(mapFnc: IContextKeyExprMapper): ContextKeyExpression;
+		negate(): ContextKeyExpression;
+	}
+
+	export type ContextKeyExpression = (ContextKeyFalseExpr | ContextKeyTrueExpr | ContextKeyDefinedExpr | ContextKeyNotExpr | ContextKeyEqualsExpr | ContextKeyNotEqualsExpr | ContextKeyRegexExpr | ContextKeyNotRegexExpr | ContextKeyAndExpr | ContextKeyOrExpr | ContextKeyInExpr | ContextKeyNotInExpr | ContextKeyGreaterExpr | ContextKeyGreaterEqualsExpr | ContextKeySmallerExpr | ContextKeySmallerEqualsExpr);
+
+	export abstract class ContextKeyExpr {
+		static false(): ContextKeyExpression;
+		static true(): ContextKeyExpression;
+		static has(key: string): ContextKeyExpression;
+		static equals(key: string, value: any): ContextKeyExpression;
+		static notEquals(key: string, value: any): ContextKeyExpression;
+		static regex(key: string, value: RegExp): ContextKeyExpression;
+		static in(key: string, value: string): ContextKeyExpression;
+		static not(key: string): ContextKeyExpression;
+		static and(...expr: Array<ContextKeyExpression | undefined | null>): ContextKeyExpression | undefined;
+		static or(...expr: Array<ContextKeyExpression | undefined | null>): ContextKeyExpression | undefined;
+		static greater(key: string, value: number): ContextKeyExpression;
+		static greaterEquals(key: string, value: number): ContextKeyExpression;
+		static smaller(key: string, value: number): ContextKeyExpression;
+		static smallerEquals(key: string, value: number): ContextKeyExpression;
+		static deserialize(serialized: string | null | undefined, strict?: boolean): ContextKeyExpression | undefined;
+	}
+
+	export class ContextKeyFalseExpr implements IContextKeyExpression {
+		static INSTANCE: ContextKeyFalseExpr;
+		readonly type = ContextKeyExprType.False;
+		protected constructor();
+		cmp(other: ContextKeyExpression): number;
+		equals(other: ContextKeyExpression): boolean;
+		substituteConstants(): ContextKeyExpression | undefined;
+		evaluate(context: IContext): boolean;
+		serialize(): string;
+		keys(): string[];
+		map(mapFnc: IContextKeyExprMapper): ContextKeyExpression;
+		negate(): ContextKeyExpression;
+	}
+
+	export class ContextKeyTrueExpr implements IContextKeyExpression {
+		static INSTANCE: ContextKeyTrueExpr;
+		readonly type = ContextKeyExprType.True;
+		protected constructor();
+		cmp(other: ContextKeyExpression): number;
+		equals(other: ContextKeyExpression): boolean;
+		substituteConstants(): ContextKeyExpression | undefined;
+		evaluate(context: IContext): boolean;
+		serialize(): string;
+		keys(): string[];
+		map(mapFnc: IContextKeyExprMapper): ContextKeyExpression;
+		negate(): ContextKeyExpression;
+	}
+
+	export class ContextKeyDefinedExpr implements IContextKeyExpression {
+		readonly key: string;
+		static create(key: string, negated?: ContextKeyExpression | null): ContextKeyExpression;
+		readonly type = ContextKeyExprType.Defined;
+		protected constructor(key: string, negated: ContextKeyExpression | null);
+		cmp(other: ContextKeyExpression): number;
+		equals(other: ContextKeyExpression): boolean;
+		substituteConstants(): ContextKeyExpression | undefined;
+		evaluate(context: IContext): boolean;
+		serialize(): string;
+		keys(): string[];
+		map(mapFnc: IContextKeyExprMapper): ContextKeyExpression;
+		negate(): ContextKeyExpression;
+	}
+
+	export class ContextKeyEqualsExpr implements IContextKeyExpression {
+		static create(key: string, value: any, negated?: ContextKeyExpression | null): ContextKeyExpression;
+		readonly type = ContextKeyExprType.Equals;
+		cmp(other: ContextKeyExpression): number;
+		equals(other: ContextKeyExpression): boolean;
+		substituteConstants(): ContextKeyExpression | undefined;
+		evaluate(context: IContext): boolean;
+		serialize(): string;
+		keys(): string[];
+		map(mapFnc: IContextKeyExprMapper): ContextKeyExpression;
+		negate(): ContextKeyExpression;
+	}
+
+	export class ContextKeyInExpr implements IContextKeyExpression {
+		static create(key: string, valueKey: string): ContextKeyInExpr;
+		readonly type = ContextKeyExprType.In;
+		cmp(other: ContextKeyExpression): number;
+		equals(other: ContextKeyExpression): boolean;
+		substituteConstants(): ContextKeyExpression | undefined;
+		evaluate(context: IContext): boolean;
+		serialize(): string;
+		keys(): string[];
+		map(mapFnc: IContextKeyExprMapper): ContextKeyInExpr;
+		negate(): ContextKeyExpression;
+	}
+
+	export class ContextKeyNotInExpr implements IContextKeyExpression {
+		static create(actual: ContextKeyInExpr): ContextKeyNotInExpr;
+		readonly type = ContextKeyExprType.NotIn;
+		cmp(other: ContextKeyExpression): number;
+		equals(other: ContextKeyExpression): boolean;
+		substituteConstants(): ContextKeyExpression | undefined;
+		evaluate(context: IContext): boolean;
+		serialize(): string;
+		keys(): string[];
+		map(mapFnc: IContextKeyExprMapper): ContextKeyExpression;
+		negate(): ContextKeyExpression;
+	}
+
+	export class ContextKeyNotEqualsExpr implements IContextKeyExpression {
+		static create(key: string, value: any, negated?: ContextKeyExpression | null): ContextKeyExpression;
+		readonly type = ContextKeyExprType.NotEquals;
+		cmp(other: ContextKeyExpression): number;
+		equals(other: ContextKeyExpression): boolean;
+		substituteConstants(): ContextKeyExpression | undefined;
+		evaluate(context: IContext): boolean;
+		serialize(): string;
+		keys(): string[];
+		map(mapFnc: IContextKeyExprMapper): ContextKeyExpression;
+		negate(): ContextKeyExpression;
+	}
+
+	export class ContextKeyNotExpr implements IContextKeyExpression {
+		static create(key: string, negated?: ContextKeyExpression | null): ContextKeyExpression;
+		readonly type = ContextKeyExprType.Not;
+		cmp(other: ContextKeyExpression): number;
+		equals(other: ContextKeyExpression): boolean;
+		substituteConstants(): ContextKeyExpression | undefined;
+		evaluate(context: IContext): boolean;
+		serialize(): string;
+		keys(): string[];
+		map(mapFnc: IContextKeyExprMapper): ContextKeyExpression;
+		negate(): ContextKeyExpression;
+	}
+
+	export class ContextKeyGreaterExpr implements IContextKeyExpression {
+		static create(key: string, _value: any, negated?: ContextKeyExpression | null): ContextKeyExpression;
+		readonly type = ContextKeyExprType.Greater;
+		cmp(other: ContextKeyExpression): number;
+		equals(other: ContextKeyExpression): boolean;
+		substituteConstants(): ContextKeyExpression | undefined;
+		evaluate(context: IContext): boolean;
+		serialize(): string;
+		keys(): string[];
+		map(mapFnc: IContextKeyExprMapper): ContextKeyExpression;
+		negate(): ContextKeyExpression;
+	}
+
+	export class ContextKeyGreaterEqualsExpr implements IContextKeyExpression {
+		static create(key: string, _value: any, negated?: ContextKeyExpression | null): ContextKeyExpression;
+		readonly type = ContextKeyExprType.GreaterEquals;
+		cmp(other: ContextKeyExpression): number;
+		equals(other: ContextKeyExpression): boolean;
+		substituteConstants(): ContextKeyExpression | undefined;
+		evaluate(context: IContext): boolean;
+		serialize(): string;
+		keys(): string[];
+		map(mapFnc: IContextKeyExprMapper): ContextKeyExpression;
+		negate(): ContextKeyExpression;
+	}
+
+	export class ContextKeySmallerExpr implements IContextKeyExpression {
+		static create(key: string, _value: any, negated?: ContextKeyExpression | null): ContextKeyExpression;
+		readonly type = ContextKeyExprType.Smaller;
+		cmp(other: ContextKeyExpression): number;
+		equals(other: ContextKeyExpression): boolean;
+		substituteConstants(): ContextKeyExpression | undefined;
+		evaluate(context: IContext): boolean;
+		serialize(): string;
+		keys(): string[];
+		map(mapFnc: IContextKeyExprMapper): ContextKeyExpression;
+		negate(): ContextKeyExpression;
+	}
+
+	export class ContextKeySmallerEqualsExpr implements IContextKeyExpression {
+		static create(key: string, _value: any, negated?: ContextKeyExpression | null): ContextKeyExpression;
+		readonly type = ContextKeyExprType.SmallerEquals;
+		cmp(other: ContextKeyExpression): number;
+		equals(other: ContextKeyExpression): boolean;
+		substituteConstants(): ContextKeyExpression | undefined;
+		evaluate(context: IContext): boolean;
+		serialize(): string;
+		keys(): string[];
+		map(mapFnc: IContextKeyExprMapper): ContextKeyExpression;
+		negate(): ContextKeyExpression;
+	}
+
+	export class ContextKeyRegexExpr implements IContextKeyExpression {
+		static create(key: string, regexp: RegExp | null): ContextKeyRegexExpr;
+		readonly type = ContextKeyExprType.Regex;
+		cmp(other: ContextKeyExpression): number;
+		equals(other: ContextKeyExpression): boolean;
+		substituteConstants(): ContextKeyExpression | undefined;
+		evaluate(context: IContext): boolean;
+		serialize(): string;
+		keys(): string[];
+		map(mapFnc: IContextKeyExprMapper): ContextKeyRegexExpr;
+		negate(): ContextKeyExpression;
+	}
+
+	export class ContextKeyNotRegexExpr implements IContextKeyExpression {
+		static create(actual: ContextKeyRegexExpr): ContextKeyExpression;
+		readonly type = ContextKeyExprType.NotRegex;
+		cmp(other: ContextKeyExpression): number;
+		equals(other: ContextKeyExpression): boolean;
+		substituteConstants(): ContextKeyExpression | undefined;
+		evaluate(context: IContext): boolean;
+		serialize(): string;
+		keys(): string[];
+		map(mapFnc: IContextKeyExprMapper): ContextKeyExpression;
+		negate(): ContextKeyExpression;
+	}
+
+	export class ContextKeyAndExpr implements IContextKeyExpression {
+		readonly expr: ContextKeyExpression[];
+		static create(_expr: ReadonlyArray<ContextKeyExpression | null | undefined>, negated: ContextKeyExpression | null): ContextKeyExpression | undefined;
+		readonly type = ContextKeyExprType.And;
+		cmp(other: ContextKeyExpression): number;
+		equals(other: ContextKeyExpression): boolean;
+		substituteConstants(): ContextKeyExpression | undefined;
+		evaluate(context: IContext): boolean;
+		serialize(): string;
+		keys(): string[];
+		map(mapFnc: IContextKeyExprMapper): ContextKeyExpression;
+		negate(): ContextKeyExpression;
+	}
+
+	export class ContextKeyOrExpr implements IContextKeyExpression {
+		readonly expr: ContextKeyExpression[];
+		static create(_expr: ReadonlyArray<ContextKeyExpression | null | undefined>, negated: ContextKeyExpression | null, extraRedundantCheck: boolean): ContextKeyExpression | undefined;
+		readonly type = ContextKeyExprType.Or;
+		cmp(other: ContextKeyExpression): number;
+		equals(other: ContextKeyExpression): boolean;
+		substituteConstants(): ContextKeyExpression | undefined;
+		evaluate(context: IContext): boolean;
+		serialize(): string;
+		keys(): string[];
+		map(mapFnc: IContextKeyExprMapper): ContextKeyExpression;
+		negate(): ContextKeyExpression;
+	}
+
+	export interface ContextKeyInfo {
+		readonly key: string;
+		readonly type?: string;
+		readonly description?: string;
+	}
+
+	export class RawContextKey<T> extends ContextKeyDefinedExpr {
+		static all(): IterableIterator<ContextKeyInfo>;
+		constructor(key: string, defaultValue: T | undefined, metaOrHide?: string | true | {
+			type: string;
+			description: string;
+		});
+		bindTo(target: IContextKeyService): IContextKey<T>;
+		getValue(target: IContextKeyService): T | undefined;
+		toNegated(): ContextKeyExpression;
+		isEqualTo(value: any): ContextKeyExpression;
+		notEqualsTo(value: any): ContextKeyExpression;
+	}
+
+	export interface IContext {
+		getValue<T>(key: string): T | undefined;
+	}
+
+	export interface IContextKey<T> {
+		set(value: T): void;
+		reset(): void;
+		get(): T | undefined;
+	}
+
+	export interface IContextKeyServiceTarget {
+		parentElement: IContextKeyServiceTarget | null;
+		setAttribute(attr: string, value: string): void;
+		removeAttribute(attr: string): void;
+		hasAttribute(attr: string): boolean;
+		getAttribute(attr: string): string | null;
+	}
+
+	export const IContextKeyService: ServiceIdentifier<IContextKeyService>;
+
+	export interface IReadableSet<T> {
+		has(value: T): boolean;
+	}
+
+	export interface IContextKeyChangeEvent {
+		affectsSome(keys: IReadableSet<string>): boolean;
+	}
+
+	export interface IContextKeyService {
+		readonly _serviceBrand: undefined;
+		dispose(): void;
+		onDidChangeContext: IEvent<IContextKeyChangeEvent>;
+		bufferChangeEvents(callback: Function): void;
+		createKey<T>(key: string, defaultValue: T | undefined): IContextKey<T>;
+		contextMatchesRules(rules: ContextKeyExpression | undefined): boolean;
+		getContextKeyValue<T>(key: string): T | undefined;
+		createScoped(target: IContextKeyServiceTarget): IContextKeyService;
+		createOverlay(overlay: Iterable<[string, any]>): IContextKeyService;
+		getContext(target: IContextKeyServiceTarget | null): IContext;
+		updateParent(parentContextKeyService: IContextKeyService): void;
+	}
+
+	export interface IUserFriendlyKeybinding {
+		key: string;
+		command: string;
+		args?: any;
+		when?: string;
+	}
+
+	export enum KeybindingSource {
+		Default = 1,
+		User = 2
+	}
+
+	export interface IKeybindingEvent {
+		source: KeybindingSource;
+		keybindings?: IUserFriendlyKeybinding[];
+	}
+
+	export interface IKeyboardEvent {
+		readonly _standardKeyboardEventBrand: true;
+		readonly ctrlKey: boolean;
+		readonly shiftKey: boolean;
+		readonly altKey: boolean;
+		readonly metaKey: boolean;
+		readonly keyCode: KeyCode;
+		readonly code: string;
+	}
+
+	export interface KeybindingsSchemaContribution {
+		readonly onDidChange?: IEvent<void>;
+		getSchemaAdditions(): IJSONSchema[];
+	}
+
+	export const IKeybindingService: ServiceIdentifier<IKeybindingService>;
+
+	export interface IKeybindingService {
+		readonly _serviceBrand: undefined;
+		readonly inChordMode: boolean;
+		onDidUpdateKeybindings: IEvent<IKeybindingEvent>;
+		/**
+		 * Returns none, one or many (depending on keyboard layout)!
+		 */
+		resolveKeybinding(keybinding: Keybinding): ResolvedKeybinding[];
+		resolveKeyboardEvent(keyboardEvent: IKeyboardEvent): ResolvedKeybinding;
+		resolveUserBinding(userBinding: string): ResolvedKeybinding[];
+		/**
+		 * Resolve and dispatch `keyboardEvent` and invoke the command.
+		 */
+		dispatchEvent(e: IKeyboardEvent, target: IContextKeyServiceTarget): boolean;
+		/**
+		 * Resolve and dispatch `keyboardEvent`, but do not invoke the command or change inner state.
+		 */
+		softDispatch(keyboardEvent: IKeyboardEvent, target: IContextKeyServiceTarget): IResolveResult | null;
+		dispatchByUserSettingsLabel(userSettingsLabel: string, target: IContextKeyServiceTarget): void;
+		/**
+		 * Look up keybindings for a command.
+		 * Use `lookupKeybinding` if you are interested in the preferred keybinding.
+		 */
+		lookupKeybindings(commandId: string): ResolvedKeybinding[];
+		/**
+		 * Look up the preferred (last defined) keybinding for a command.
+		 * @returns The preferred keybinding or null if the command is not bound.
+		 */
+		lookupKeybinding(commandId: string, context?: IContextKeyService): ResolvedKeybinding | undefined;
+		getDefaultKeybindingsContent(): string;
+		getDefaultKeybindings(): readonly ResolvedKeybindingItem[];
+		getKeybindings(): readonly ResolvedKeybindingItem[];
+		customKeybindingsCount(): number;
+		/**
+		 * Will the given key event produce a character that's rendered on screen, e.g. in a
+		 * text box. *Note* that the results of this function can be incorrect.
+		 */
+		mightProducePrintableCharacter(event: IKeyboardEvent): boolean;
+		registerSchemaContribution(contribution: KeybindingsSchemaContribution): void;
+		toggleLogging(): boolean;
+		_dumpDebugInfo(): string;
+		_dumpDebugInfoJSON(): string;
+	}
+
+	export interface IUserKeybindingItem {
+		parts: (SimpleKeybinding | ScanCodeBinding)[];
+		command: string | null;
+		commandArgs?: any;
+		when: ContextKeyExpression | undefined;
+	}
+
+	export class KeybindingIO {
+		static writeKeybindingItem(out: OutputBuilder, item: ResolvedKeybindingItem): void;
+		static readUserKeybindingItem(input: IUserFriendlyKeybinding): IUserKeybindingItem;
+	}
+
+	export class OutputBuilder {
+		write(str: string): void;
+		writeLine(str?: string): void;
+		toString(): string;
+	}
+
+	export enum OperatingSystem {
+		Windows = 1,
+		Macintosh = 2,
+		Linux = 3
+	}
+
+	export const OS: OperatingSystem;
+
+	export class KeybindingParser {
+		static parseKeybinding(input: string, OS: OperatingSystem): Keybinding | null;
+		static parseUserBinding(input: string): (SimpleKeybinding | ScanCodeBinding)[];
+	}
+
+	export type TypeConstraint = string | Function;
+
+	export interface ICommandEvent {
+		commandId: string;
+		args: any[];
+	}
+
+	export interface ICommandService {
+		readonly _serviceBrand: undefined;
+		onWillExecuteCommand: IEvent<ICommandEvent>;
+		onDidExecuteCommand: IEvent<ICommandEvent>;
+		executeCommand<T = any>(commandId: string, ...args: any[]): Promise<T | undefined>;
+	}
+
+	export type ICommandsMap = Map<string, ICommandRegistryCommand>;
+
+	export interface ICommandHandler {
+		(accessor: ServicesAccessor, ...args: any[]): void;
+	}
+
+	export interface ICommandRegistryCommand {
+		id: string;
+		handler: ICommandHandler;
+		description?: ICommandHandlerDescription | null;
+	}
+
+	export interface ICommandHandlerDescription {
+		readonly description: string;
+		readonly args: ReadonlyArray<{
+			readonly name: string;
+			readonly isOptional?: boolean;
+			readonly description?: string;
+			readonly constraint?: TypeConstraint;
+			readonly schema?: IJSONSchema;
+		}>;
+		readonly returns?: string;
+	}
+
+	export interface ICommandRegistry {
+		onDidRegisterCommand: IEvent<string>;
+		registerCommand(id: string, command: ICommandHandler): IDisposable;
+		registerCommand(command: ICommandRegistryCommand): IDisposable;
+		registerCommandAlias(oldId: string, newId: string): IDisposable;
+		getCommand(id: string): ICommandRegistryCommand | undefined;
+		getCommands(): ICommandsMap;
+	}
+
+	export const CommandsRegistry: ICommandRegistry;
+
+	export interface IKeybindingItem {
+		keybinding: (SimpleKeybinding | ScanCodeBinding)[];
+		command: string;
+		commandArgs?: any;
+		when: ContextKeyExpression | null | undefined;
+		weight1: number;
+		weight2: number;
+		extensionId: string | null;
+		isBuiltinExtension: boolean;
+	}
+
+	export interface IKeybindings {
+		primary?: number;
+		secondary?: number[];
+		win?: {
+			primary: number;
+			secondary?: number[];
+		};
+		linux?: {
+			primary: number;
+			secondary?: number[];
+		};
+		mac?: {
+			primary: number;
+			secondary?: number[];
+		};
+	}
+
+	export interface IKeybindingRule extends IKeybindings {
+		id: string;
+		weight: number;
+		args?: any;
+		when?: ContextKeyExpression | null | undefined;
+	}
+
+	export interface IExtensionKeybindingRule {
+		keybinding: (SimpleKeybinding | ScanCodeBinding)[];
+		id: string;
+		args?: any;
+		weight: number;
+		when: ContextKeyExpression | undefined;
+		extensionId?: string;
+		isBuiltinExtension?: boolean;
+	}
+
+	export enum KeybindingWeight {
+		EditorCore = 0,
+		EditorContrib = 100,
+		WorkbenchContrib = 200,
+		BuiltinExtension = 300,
+		ExternalExtension = 400
+	}
+
+	export interface ICommandAndKeybindingRule extends IKeybindingRule {
+		handler: ICommandHandler;
+		description?: ICommandHandlerDescription | null;
+	}
+
+	export interface IKeybindingsRegistry {
+		registerKeybindingRule(rule: IKeybindingRule): void;
+		setExtensionKeybindings(rules: IExtensionKeybindingRule[]): void;
+		registerCommandAndKeybindingRule(desc: ICommandAndKeybindingRule): void;
+		getDefaultKeybindings(): IKeybindingItem[];
+	}
+
+	export const KeybindingsRegistry: IKeybindingsRegistry;
+
+	export const KeybindingExtensions: {
+		EditorModes: string;
+	};
+
+	export const JsonContributionExtensions: {
+		JSONContribution: string;
+	};
+
+	export interface ISchemaContributions {
+		schemas: {
+			[id: string]: IJSONSchema;
+		};
+	}
+
+	export interface IJSONContributionRegistry {
+		readonly onDidChangeSchema: IEvent<string>;
+		/**
+		 * Register a schema to the registry.
+		 */
+		registerSchema(uri: string, unresolvedSchemaContent: IJSONSchema): void;
+		/**
+		 * Notifies all listeners that the content of the given schema has changed.
+		 * @param uri The id of the schema
+		 */
+		notifySchemaChanged(uri: string): void;
+		/**
+		 * Get all schemas
+		 */
+		getSchemaContributions(): ISchemaContributions;
+	}
+
+	export interface IResolveResult {
+		/** Whether the resolved keybinding is entering a chord */
+		enterChord: boolean;
+		/** Whether the resolved keybinding is leaving (and executing) a chord */
+		leaveChord: boolean;
+		commandId: string | null;
+		commandArgs: any;
+		bubble: boolean;
+	}
+
+	export class KeybindingResolver {
+		constructor(defaultKeybindings: ResolvedKeybindingItem[], overrides: ResolvedKeybindingItem[], log: (str: string) => void);
+		/**
+		 * Looks for rules containing "-commandId" and removes them.
+		 */
+		static handleRemovals(rules: ResolvedKeybindingItem[]): ResolvedKeybindingItem[];
+		/**
+		 * Returns true if it is provable `a` implies `b`.
+		 */
+		static whenIsEntirelyIncluded(a: ContextKeyExpression | null | undefined, b: ContextKeyExpression | null | undefined): boolean;
+		getDefaultBoundCommands(): Map<string, boolean>;
+		getDefaultKeybindings(): readonly ResolvedKeybindingItem[];
+		getKeybindings(): readonly ResolvedKeybindingItem[];
+		lookupKeybindings(commandId: string): ResolvedKeybindingItem[];
+		lookupPrimaryKeybinding(commandId: string, context: IContextKeyService): ResolvedKeybindingItem | null;
+		resolve(context: IContext, currentChord: string | null, keypress: string): IResolveResult | null;
+	}
+
+	export class ResolvedKeybindingItem {
+		_resolvedKeybindingItemBrand: void;
+		readonly resolvedKeybinding: ResolvedKeybinding | undefined;
+		readonly keypressParts: string[];
+		readonly bubble: boolean;
+		readonly command: string | null;
+		readonly commandArgs: any;
+		readonly when: ContextKeyExpression | undefined;
+		readonly isDefault: boolean;
+		readonly extensionId: string | null;
+		readonly isBuiltinExtension: boolean;
+		constructor(resolvedKeybinding: ResolvedKeybinding | undefined, command: string | null, commandArgs: any, when: ContextKeyExpression | undefined, isDefault: boolean, extensionId: string | null, isBuiltinExtension: boolean);
+	}
+
+	export function resolveUserKeybindingItems(items: IUserKeybindingItem[], isDefault: boolean, keyboardMapper: IKeyboardMapper): ResolvedKeybindingItem[];
+
+	export const ConfigurationExtensions: {
+		Configuration: string;
+	};
+
+	export interface IConfigurationRegistry {
+		/**
+		 * Register a configuration to the registry.
+		 */
+		registerConfiguration(configuration: IConfigurationNode): void;
+		/**
+		 * Register multiple configurations to the registry.
+		 */
+		registerConfigurations(configurations: IConfigurationNode[], validate?: boolean): void;
+		/**
+		 * Deregister multiple configurations from the registry.
+		 */
+		deregisterConfigurations(configurations: IConfigurationNode[]): void;
+		/**
+		 * update the configuration registry by
+		 * 	- registering the configurations to add
+		 * 	- dereigstering the configurations to remove
+		 */
+		updateConfigurations(configurations: {
+			add: IConfigurationNode[];
+			remove: IConfigurationNode[];
+		}): void;
+		/**
+		 * Register multiple default configurations to the registry.
+		 */
+		registerDefaultConfigurations(defaultConfigurations: IConfigurationDefaults[]): void;
+		/**
+		 * Deregister multiple default configurations from the registry.
+		 */
+		deregisterDefaultConfigurations(defaultConfigurations: IConfigurationDefaults[]): void;
+		/**
+		 * Return the registered configuration defaults overrides
+		 */
+		getConfigurationDefaultsOverrides(): Map<string, IConfigurationDefaultOverride>;
+		/**
+		 * Signal that the schema of a configuration setting has changes. It is currently only supported to change enumeration values.
+		 * Property or default value changes are not allowed.
+		 */
+		notifyConfigurationSchemaUpdated(...configurations: IConfigurationNode[]): void;
+		/**
+		 * Event that fires whenver a configuration has been
+		 * registered.
+		 */
+		readonly onDidSchemaChange: IEvent<void>;
+		/**
+		 * Event that fires whenver a configuration has been
+		 * registered.
+		 */
+		readonly onDidUpdateConfiguration: IEvent<{
+			properties: string[];
+			defaultsOverrides?: boolean;
+		}>;
+		/**
+		 * Returns all configuration nodes contributed to this registry.
+		 */
+		getConfigurations(): IConfigurationNode[];
+		/**
+		 * Returns all configurations settings of all configuration nodes contributed to this registry.
+		 */
+		getConfigurationProperties(): IStringDictionary<IRegisteredConfigurationPropertySchema>;
+		/**
+		 * Returns all excluded configurations settings of all configuration nodes contributed to this registry.
+		 */
+		getExcludedConfigurationProperties(): IStringDictionary<IRegisteredConfigurationPropertySchema>;
+		/**
+		 * Register the identifiers for editor configurations
+		 */
+		registerOverrideIdentifiers(identifiers: string[]): void;
+	}
+
+	export interface IConfigurationPropertySchema extends IJSONSchema {
+		scope?: ConfigurationScope;
+		/**
+		 * When restricted, value of this configuration will be read only from trusted sources.
+		 * For eg., If the workspace is not trusted, then the value of this configuration is not read from workspace settings file.
+		 */
+		restricted?: boolean;
+		/**
+		 * When `false` this property is excluded from the registry. Default is to include.
+		 */
+		included?: boolean;
+		/**
+		 * List of tags associated to the property.
+		 *  - A tag can be used for filtering
+		 *  - Use `experimental` tag for marking the setting as experimental. **Note:** Defaults of experimental settings can be changed by the running experiments.
+		 */
+		tags?: string[];
+		/**
+		 * When enabled this setting is ignored during sync and user can override this.
+		 */
+		ignoreSync?: boolean;
+		/**
+		 * When enabled this setting is ignored during sync and user cannot override this.
+		 */
+		disallowSyncIgnore?: boolean;
+		/**
+		 * Labels for enumeration items
+		 */
+		enumItemLabels?: string[];
+		/**
+		 * When specified, controls the presentation format of string settings.
+		 * Otherwise, the presentation format defaults to `singleline`.
+		 */
+		editPresentation?: EditPresentationTypes;
+		/**
+		 * When specified, gives an order number for the setting
+		 * within the settings editor. Otherwise, the setting is placed at the end.
+		 */
+		order?: number;
+	}
+
+	export interface IConfigurationNode {
+		id?: string;
+		order?: number;
+		type?: string | string[];
+		title?: string;
+		description?: string;
+		properties?: IStringDictionary<IConfigurationPropertySchema>;
+		allOf?: IConfigurationNode[];
+		scope?: ConfigurationScope;
+		extensionInfo?: IExtensionInfo;
+		restrictedProperties?: string[];
+	}
+
+	export enum EditPresentationTypes {
+		Multiline = 'multilineText',
+		Singleline = 'singlelineText'
+	}
+
+	export interface IConfigurationDefaults {
+		overrides: IStringDictionary<any>;
+		source?: IExtensionInfo | string;
+	}
+
+	export type IConfigurationDefaultOverride = {
+		value: any;
+		source?: IExtensionInfo | string;
+	};
+
+	export type IRegisteredConfigurationPropertySchema = IConfigurationPropertySchema & {
+		defaultDefaultValue?: any;
+		source?: IExtensionInfo;
+		defaultValueSource?: IExtensionInfo | string;
+	};
+
+	export interface IExtensionInfo {
+		id: string;
+		displayName?: string;
+	}
+
+	export enum ConfigurationScope {
+		/**
+		 * Application specific configuration, which can be configured only in local user settings.
+		 */
+		APPLICATION = 1,
+		/**
+		 * Machine specific configuration, which can be configured only in local and remote user settings.
+		 */
+		MACHINE = 2,
+		/**
+		 * Window specific configuration, which can be configured in the user or workspace settings.
+		 */
+		WINDOW = 3,
+		/**
+		 * Resource specific configuration, which can be configured in the user, workspace or folder settings.
+		 */
+		RESOURCE = 4,
+		/**
+		 * Resource specific configuration that can be configured in language specific settings
+		 */
+		LANGUAGE_OVERRIDABLE = 5,
+		/**
+		 * Machine specific configuration that can also be configured in workspace or folder settings.
+		 */
+		MACHINE_OVERRIDABLE = 6
+	}
+
+	export const allSettings: {
+		properties: IStringDictionary<IConfigurationPropertySchema>;
+		patternProperties: IStringDictionary<IConfigurationPropertySchema>;
+	};
+
+	export class Snippet {
+		readonly scopes: string[];
+		readonly name: string;
+		readonly prefix: string;
+		readonly description: string;
+		readonly body: string;
+		readonly source: string;
+		readonly snippetSource: SnippetSource;
+		readonly snippetIdentifier?: string;
+		readonly prefixLow: string;
+		constructor(scopes: string[], name: string, prefix: string, description: string, body: string, source: string, snippetSource: SnippetSource, snippetIdentifier?: string);
+		get codeSnippet(): string;
+		get isBogous(): boolean;
+		get needsClipboard(): boolean;
+		static compare(a: Snippet, b: Snippet): number;
+	}
+
+	export interface JsonSerializedSnippet {
+		body: string | string[];
+		scope: string;
+		prefix: string | string[] | undefined;
+		description: string;
+	}
+
+	export enum SnippetSource {
+		User = 1,
+		Workspace = 2,
+		Extension = 3
+	}
+
+	export function parseSnippet(name: string, snippet: JsonSerializedSnippet, defaultScopes: string[] | undefined, source: string, snippetSource: SnippetSource, snippetIdentifier?: string): Snippet[];
+
+	export function snippetScopeSelect(data: Snippet[], selector: string, bucket: Snippet[]): void;
+
+	export interface IExtensionCommand {
+		command: string;
+		title: string;
+		category?: string;
+	}
+
+	export interface IConfigurationProperty {
+		description: string;
+		type: string | string[];
+		default?: any;
+	}
+
+	export interface IConfiguration {
+		id?: string;
+		order?: number;
+		title?: string;
+		properties: {
+			[key: string]: IConfigurationProperty;
+		};
+	}
+
+	export interface IDebugger {
+		label?: string;
+		type: string;
+		runtime?: string;
+	}
+
+	export interface IGrammar {
+		language: string;
+	}
+
+	export interface IJSONValidation {
+		fileMatch: string | string[];
+		url: string;
+	}
+
+	export interface IKeyBinding {
+		command: string;
+		key: string;
+		when?: string;
+		mac?: string;
+		linux?: string;
+		win?: string;
+	}
+
+	export interface ILanguage {
+		id: string;
+		extensions: string[];
+		aliases: string[];
+	}
+
+	export interface IMenu {
+		command: string;
+		alt?: string;
+		when?: string;
+		group?: string;
+	}
+
+	export interface ISnippet {
+		language: string;
+	}
+
+	export interface ITheme {
+		label: string;
+	}
+
+	export interface IViewContainer {
+		id: string;
+		title: string;
+	}
+
+	export interface IView {
+		id: string;
+		name: string;
+	}
+
+	export interface IColor {
+		id: string;
+		description: string;
+		defaults: {
+			light: string;
+			dark: string;
+			highContrast: string;
+		};
+	}
+
+	export interface IWebviewEditor {
+		readonly viewType: string;
+		readonly priority: string;
+		readonly selector: readonly {
+			readonly filenamePattern?: string;
+		}[];
+	}
+
+	export interface ICodeActionContributionAction {
+		readonly kind: string;
+		readonly title: string;
+		readonly description?: string;
+	}
+
+	export interface ICodeActionContribution {
+		readonly languages: readonly string[];
+		readonly actions: readonly ICodeActionContributionAction[];
+	}
+
+	export interface IAuthenticationContribution {
+		readonly id: string;
+		readonly label: string;
+	}
+
+	export interface IWalkthroughStep {
+		readonly id: string;
+		readonly title: string;
+		readonly description: string | undefined;
+		readonly media: {
+			image: string | {
+				dark: string;
+				light: string;
+				hc: string;
+			};
+			altText: string;
+			markdown?: never;
+			svg?: never;
+		} | {
+			markdown: string;
+			image?: never;
+			svg?: never;
+		} | {
+			svg: string;
+			altText: string;
+			markdown?: never;
+			image?: never;
+		};
+		readonly completionEvents?: string[];
+		/** @deprecated use `completionEvents: 'onCommand:...'` */
+		readonly doneOn?: {
+			command: string;
+		};
+		readonly when?: string;
+	}
+
+	export interface IWalkthrough {
+		readonly id: string;
+		readonly title: string;
+		readonly description: string;
+		readonly steps: IWalkthroughStep[];
+		readonly featuredFor: string[] | undefined;
+		readonly when?: string;
+	}
+
+	export interface IStartEntry {
+		readonly title: string;
+		readonly description: string;
+		readonly command: string;
+		readonly when?: string;
+		readonly category: 'file' | 'folder' | 'notebook';
+	}
+
+	export interface INotebookEntry {
+		readonly type: string;
+		readonly displayName: string;
+	}
+
+	export interface INotebookRendererContribution {
+		readonly id: string;
+		readonly displayName: string;
+		readonly mimeTypes: string[];
+	}
+
+	export interface ITranslation {
+		id: string;
+		path: string;
+	}
+
+	export interface ILocalizationContribution {
+		languageId: string;
+		languageName?: string;
+		localizedLanguageName?: string;
+		translations: ITranslation[];
+		minimalTranslations?: {
+			[key: string]: string;
+		};
+	}
+
+	export interface IExtensionContributions {
+		commands?: IExtensionCommand[];
+		configuration?: IConfiguration | IConfiguration[];
+		debuggers?: IDebugger[];
+		grammars?: IGrammar[];
+		jsonValidation?: IJSONValidation[];
+		keybindings?: IKeyBinding[];
+		languages?: ILanguage[];
+		menus?: {
+			[context: string]: IMenu[];
+		};
+		snippets?: ISnippet[];
+		themes?: ITheme[];
+		iconThemes?: ITheme[];
+		productIconThemes?: ITheme[];
+		viewsContainers?: {
+			[location: string]: IViewContainer[];
+		};
+		views?: {
+			[location: string]: IView[];
+		};
+		colors?: IColor[];
+		localizations?: ILocalizationContribution[];
+		readonly customEditors?: readonly IWebviewEditor[];
+		readonly codeActions?: readonly ICodeActionContribution[];
+		authentication?: IAuthenticationContribution[];
+		walkthroughs?: IWalkthrough[];
+		startEntries?: IStartEntry[];
+		readonly notebooks?: INotebookEntry[];
+		readonly notebookRenderer?: INotebookRendererContribution[];
+	}
+
+	export interface IExtensionCapabilities {
+		readonly virtualWorkspaces?: ExtensionVirtualWorkspaceSupport;
+		readonly untrustedWorkspaces?: ExtensionUntrustedWorkspaceSupport;
+	}
+
+	export type LimitedWorkspaceSupportType = 'limited';
+
+	export type ExtensionUntrustedWorkspaceSupportType = boolean | LimitedWorkspaceSupportType;
+
+	export type ExtensionUntrustedWorkspaceSupport = {
+		supported: true;
+	} | {
+		supported: false;
+		description: string;
+	} | {
+		supported: LimitedWorkspaceSupportType;
+		description: string;
+		restrictedConfigurations?: string[];
+	};
+
+	export type ExtensionVirtualWorkspaceSupportType = boolean | LimitedWorkspaceSupportType;
+
+	export type ExtensionVirtualWorkspaceSupport = boolean | {
+		supported: true;
+	} | {
+		supported: false | LimitedWorkspaceSupportType;
+		description: string;
+	};
+
+	export interface IExtensionIdentifier {
+		id: string;
+		uuid?: string;
+	}
+
+	export interface IExtensionManifest {
+		readonly name: string;
+		readonly displayName?: string;
+		readonly publisher: string;
+		readonly version: string;
+		readonly engines: {
+			readonly vscode: string;
+		};
+		readonly description?: string;
+		readonly main?: string;
+		readonly browser?: string;
+		readonly icon?: string;
+		readonly categories?: string[];
+		readonly keywords?: string[];
+		readonly activationEvents?: string[];
+		readonly extensionDependencies?: string[];
+		readonly extensionPack?: string[];
+		readonly contributes?: IExtensionContributions;
+		readonly repository?: {
+			url: string;
+		};
+		readonly bugs?: {
+			url: string;
+		};
+		readonly enabledApiProposals?: readonly string[];
+		readonly api?: string;
+		readonly scripts?: {
+			[key: string]: string;
+		};
+		readonly capabilities?: IExtensionCapabilities;
+	}
+
+	export enum ExtensionType {
+		System = 0,
+		User = 1
+	}
+
+	export interface IExtension {
+		readonly type: ExtensionType;
+		readonly isBuiltin: boolean;
+		readonly identifier: IExtensionIdentifier;
+		readonly manifest: IExtensionManifest;
+		readonly location: Uri;
+		readonly readmeUrl?: Uri;
+		readonly changelogUrl?: Uri;
+	}
+
+	/**
+	 * **!Do not construct directly!**
+	 *
+	 * **!Only static methods because it gets serialized!**
+	 *
+	 * This represents the "canonical" version for an extension identifier. Extension ids
+	 * have to be case-insensitive (due to the marketplace), but we must ensure case
+	 * preservation because the extension API is already public at this time.
+	 *
+	 * For example, given an extension with the publisher `"Hello"` and the name `"World"`,
+	 * its canonical extension identifier is `"Hello.World"`. This extension could be
+	 * referenced in some other extension's dependencies using the string `"hello.world"`.
+	 *
+	 * To make matters more complicated, an extension can optionally have an UUID. When two
+	 * extensions have the same UUID, they are considered equal even if their identifier is different.
+	 */
+		export class ExtensionIdentifier {
+			readonly value: string;
+			constructor(value: string);
+			static equals(a: ExtensionIdentifier | string | null | undefined, b: ExtensionIdentifier | string | null | undefined): any;
+			/**
+			 * Gives the value by which to index (for equality).
+			 */
+			static toKey(id: ExtensionIdentifier | string): string;
+		}
+
+		export interface IExtensionDescription extends IExtensionManifest {
+			readonly identifier: ExtensionIdentifier;
+			readonly uuid?: string;
+			readonly isBuiltin: boolean;
+			readonly isUserBuiltin: boolean;
+			readonly isUnderDevelopment: boolean;
+			readonly extensionLocation: Uri;
+		}
+
+		export interface ISnippetGetOptions {
+			includeDisabledSnippets?: boolean;
+			includeNoPrefixSnippets?: boolean;
+		}
+
+		export interface ISnippetsService {
+			readonly _serviceBrand: undefined;
+			isEnabled(snippet: Snippet): boolean;
+			updateEnablement(snippet: Snippet, enabled: boolean): void;
+			getSnippets(languageId: string, opt?: ISnippetGetOptions): Promise<Snippet[]>;
+			getSnippetsSync(languageId: string, opt?: ISnippetGetOptions): Snippet[];
+		}
+
+		export class SnippetCompletion implements languages.CompletionItem {
+			readonly snippet: Snippet;
+			label: languages.CompletionItemLabel;
+			detail: string;
+			insertText: string;
+			documentation?: MarkdownString;
+			range: IRange | {
+				insert: IRange;
+				replace: IRange;
+			};
+			sortText: string;
+			kind: languages.CompletionItemKind;
+			insertTextRules: languages.CompletionItemInsertTextRule;
+			constructor(snippet: Snippet, range: IRange | {
+				insert: IRange;
+				replace: IRange;
+			});
+			resolve(): this;
+			static compareByLabel(a: SnippetCompletion, b: SnippetCompletion): number;
+		}
+
+		export class SnippetCompletionProvider implements languages.CompletionItemProvider {
+			readonly _debugDisplayName = 'snippetCompletions';
+			constructor(_languageService: languages.ILanguageService, _snippets: ISnippetsService, _languageConfigurationService: languages.ILanguageConfigurationService);
+			provideCompletionItems(model: editor.ITextModel, position: Position, context: languages.CompletionContext): Promise<languages.CompletionList>;
+			resolveCompletionItem(item: languages.CompletionItem): languages.CompletionItem;
+		}
+
+		/**
+		 * An array representing a fuzzy match.
+		 *
+		 * 0. the score
+		 * 1. the offset at which matching started
+		 * 2. `<match_pos_N>`
+		 * 3. `<match_pos_1>`
+		 * 4. `<match_pos_0>` etc
+		 */
+		export type FuzzyScore = [score: number, wordStart: number, ...matches: number[]];
+
+		export class SuggestCompletionItem {
+			readonly position: IPosition;
+			readonly completion: languages.CompletionItem;
+			readonly container: languages.CompletionList;
+			readonly provider: languages.CompletionItemProvider;
+			_brand: 'ISuggestionItem';
+			readonly editStart: IPosition;
+			readonly editInsertEnd: IPosition;
+			readonly editReplaceEnd: IPosition;
+			readonly textLabel: string;
+			readonly labelLow: string;
+			readonly sortTextLow?: string;
+			readonly filterTextLow?: string;
+			readonly isInvalid: boolean;
+			score: FuzzyScore;
+			distance: number;
+			idx?: number;
+			word?: string;
+			constructor(position: IPosition, completion: languages.CompletionItem, container: languages.CompletionList, provider: languages.CompletionItemProvider);
+			get isResolved(): boolean;
+			resolve(token: CancellationToken): unknown;
+		}
+
+		export enum SnippetSortOrder {
+			Top = 0,
+			Inline = 1,
+			Bottom = 2
+		}
+
+		export function getSnippetSuggestSupport(): languages.CompletionItemProvider;
+
+		export function setSnippetSuggestSupport(support: languages.CompletionItemProvider): languages.CompletionItemProvider;
+
+		export interface CompletionDurationEntry {
+			readonly providerName: string;
+			readonly elapsedProvider: number;
+			readonly elapsedOverall: number;
+		}
+
+		export interface CompletionDurations {
+			readonly entries: readonly CompletionDurationEntry[];
+			readonly elapsed: number;
+		}
+
+		export interface IRegExp {
+			pattern: string;
+			flags?: string;
+		}
+
+		export interface IIndentationRules {
+			decreaseIndentPattern: string | IRegExp;
+			increaseIndentPattern: string | IRegExp;
+			indentNextLinePattern?: string | IRegExp;
+			unIndentedLinePattern?: string | IRegExp;
+		}
+
+		export interface IEnterAction {
+			indent: 'none' | 'indent' | 'indentOutdent' | 'outdent';
+			appendText?: string;
+			removeText?: number;
+		}
+
+		export interface IOnEnterRule {
+			beforeText: string | IRegExp;
+			afterText?: string | IRegExp;
+			previousLineText?: string | IRegExp;
+			action: IEnterAction;
+		}
+
+		export interface ILanguageConfiguration {
+			comments?: languages.CommentRule;
+			brackets?: languages.CharacterPair[];
+			autoClosingPairs?: Array<languages.CharacterPair | languages.IAutoClosingPairConditional>;
+			surroundingPairs?: Array<languages.CharacterPair | languages.IAutoClosingPair>;
+			colorizedBracketPairs?: Array<languages.CharacterPair>;
+			wordPattern?: string | IRegExp;
+			indentationRules?: IIndentationRules;
+			folding?: languages.FoldingRules;
+			autoCloseBefore?: string;
+			onEnterRules?: IOnEnterRule[];
+		}
+
+		export function handleLanguageConfiguration(languageId: string, configuration: ILanguageConfiguration): void;
+
+		export const VS_LIGHT_THEME = 'vs';
+
+		export const VS_DARK_THEME = 'vs-dark';
+
+		export const VS_HC_THEME = 'hc-black';
+
+		export interface IWorkbenchTheme {
+			readonly id: string;
+			readonly label: string;
+			readonly extensionData?: ExtensionData;
+			readonly description?: string;
+			readonly settingsId: string | null;
+		}
+
+		export interface IWorkbenchColorTheme extends IWorkbenchTheme, editor.IColorTheme {
+			readonly settingsId: string;
+			readonly tokenColors: ITextMateThemingRule[];
+		}
+
+		export type ThemeSettingTarget = ConfigurationTarget | undefined | 'auto' | 'preview';
+
+		export interface IWorkbenchThemeService extends editor.IThemeService {
+			readonly _serviceBrand: undefined;
+			getColorTheme(): IWorkbenchColorTheme;
+			getMarketplaceColorThemes(publisher: string, name: string, version: string): Promise<IWorkbenchColorTheme[]>;
+			onDidColorThemeChange: IEvent<IWorkbenchColorTheme>;
+		}
+
+		export interface ITextMateThemingRule {
+			name?: string;
+			scope?: string | string[];
+			settings: ITokenColorizationSetting;
+		}
+
+		export interface ITokenColorizationSetting {
+			foreground?: string;
+			background?: string;
+			fontStyle?: string;
+		}
+
+		export interface ISemanticTokenColorizationSetting {
+			foreground?: string;
+			fontStyle?: string;
+			bold?: boolean;
+			underline?: boolean;
+			strikethrough?: boolean;
+			italic?: boolean;
+		}
+
+		export interface ExtensionVersion {
+			publisher: string;
+			name: string;
+			version: string;
+		}
+
+		export interface ExtensionData {
+			extensionId: string;
+			extensionPublisher: string;
+			extensionName: string;
+			extensionIsBuiltin: boolean;
+		}
+
+		export interface IThemeExtensionPoint {
+			id: string;
+			label?: string;
+			description?: string;
+			path: string;
+			uiTheme?: typeof VS_LIGHT_THEME | typeof VS_DARK_THEME | typeof VS_HC_THEME;
+			_watch: boolean;
+		}
+
+		/**
+		 * A service useful for reading resources from within extensions.
+		 */
+		export interface IExtensionResourceLoaderService {
+			readonly _serviceBrand: undefined;
+			/**
+			 * Read a certain resource within an extension.
+			 */
+			readExtensionResource(uri: Uri): Promise<string>;
+		}
+
+		export type TokenClassificationString = string;
+
+		export interface TokenSelector {
+			match(type: string, modifiers: string[], language: string): number;
+			readonly id: string;
+		}
+
+		export interface TokenTypeOrModifierContribution {
+			readonly num: number;
+			readonly id: string;
+			readonly superType?: string;
+			readonly description: string;
+			readonly deprecationMessage?: string;
+		}
+
+		export interface TokenStyleData {
+			foreground: editor.Color | undefined;
+			bold: boolean | undefined;
+			underline: boolean | undefined;
+			strikethrough: boolean | undefined;
+			italic: boolean | undefined;
+		}
+
+		export class TokenStyle implements Readonly<TokenStyleData> {
+			readonly foreground: editor.Color | undefined;
+			readonly bold: boolean | undefined;
+			readonly underline: boolean | undefined;
+			readonly strikethrough: boolean | undefined;
+			readonly italic: boolean | undefined;
+			constructor(foreground: editor.Color | undefined, bold: boolean | undefined, underline: boolean | undefined, strikethrough: boolean | undefined, italic: boolean | undefined);
+		}
+
+		export type ProbeScope = string[];
+
+		export interface TokenStyleDefaults {
+			scopesToProbe?: ProbeScope[];
+			light?: TokenStyleValue;
+			dark?: TokenStyleValue;
+			hc?: TokenStyleValue;
+		}
+
+		export interface SemanticTokenDefaultRule {
+			selector: TokenSelector;
+			defaults: TokenStyleDefaults;
+		}
+
+		export interface SemanticTokenRule {
+			style: TokenStyle;
+			selector: TokenSelector;
+		}
+
+		/**
+		 * A TokenStyle Value is either a token style literal, or a TokenClassificationString
+		 */
+		export type TokenStyleValue = TokenStyle | TokenClassificationString;
+
+		export const TokenClassificationExtensions: {
+			TokenClassificationContribution: string;
+		};
+
+		export interface ITokenClassificationRegistry {
+			readonly onDidChangeSchema: IEvent<void>;
+			/**
+			 * Register a token type to the registry.
+			 * @param id The TokenType id as used in theme description files
+			 * @param description the description
+			 */
+			registerTokenType(id: string, description: string, superType?: string, deprecationMessage?: string): void;
+			/**
+			 * Register a token modifier to the registry.
+			 * @param id The TokenModifier id as used in theme description files
+			 * @param description the description
+			 */
+			registerTokenModifier(id: string, description: string): void;
+			/**
+			 * Parses a token selector from a selector string.
+			 * @param selectorString selector string in the form (*|type)(.modifier)*
+			 * @param language language to which the selector applies or undefined if the selector is for all languafe
+			 * @returns the parsesd selector
+			 * @throws an error if the string is not a valid selector
+			 */
+			parseTokenSelector(selectorString: string, language?: string): TokenSelector;
+			/**
+			 * Register a TokenStyle default to the registry.
+			 * @param selector The rule selector
+			 * @param defaults The default values
+			 */
+			registerTokenStyleDefault(selector: TokenSelector, defaults: TokenStyleDefaults): void;
+			/**
+			 * Deregister a TokenStyle default to the registry.
+			 * @param selector The rule selector
+			 */
+			deregisterTokenStyleDefault(selector: TokenSelector): void;
+			/**
+			 * Deregister a TokenType from the registry.
+			 */
+			deregisterTokenType(id: string): void;
+			/**
+			 * Deregister a TokenModifier from the registry.
+			 */
+			deregisterTokenModifier(id: string): void;
+			/**
+			 * Get all TokenType contributions
+			 */
+			getTokenTypes(): TokenTypeOrModifierContribution[];
+			/**
+			 * Get all TokenModifier contributions
+			 */
+			getTokenModifiers(): TokenTypeOrModifierContribution[];
+			/**
+			 * The styling rules to used when a schema does not define any styling rules.
+			 */
+			getTokenStylingDefaultRules(): SemanticTokenDefaultRule[];
+			/**
+			 * JSON schema for an object to assign styling to token classifications
+			 */
+			getTokenStylingSchema(): IJSONSchema;
+		}
+
+		export function getTokenClassificationRegistry(): ITokenClassificationRegistry;
+
+		export class ColorThemeData implements IWorkbenchColorTheme {
+			static readonly STORAGE_KEY = 'colorThemeData';
+			id: string;
+			label: string;
+			settingsId: string;
+			description?: string;
+			isLoaded: boolean;
+			location?: Uri;
+			watch?: boolean;
+			extensionData?: ExtensionData;
+			get semanticHighlighting(): boolean;
+			get tokenColors(): ITextMateThemingRule[];
+			getColor(colorId: editor.ColorIdentifier, useDefault?: boolean): editor.Color | undefined;
+			get tokenColorMap(): string[];
+			getTokenStyleMetadata(typeWithLanguage: string, modifiers: string[], defaultLanguage: string, useDefault?: boolean, definitions?: TokenStyleDefinitions): editor.ITokenStyle | undefined;
+			getDefault(colorId: editor.ColorIdentifier): editor.Color | undefined;
+			defines(colorId: editor.ColorIdentifier): boolean;
+			ensureLoaded(extensionResourceLoaderService: IExtensionResourceLoaderService): Promise<void>;
+			reload(extensionResourceLoaderService: IExtensionResourceLoaderService): Promise<void>;
+			clearCaches(): void;
+			get baseTheme(): string;
+			get classNames(): string[];
+			get type(): editor.ColorScheme;
+			static fromExtensionTheme(theme: IThemeExtensionPoint, colorThemeLocation: Uri, extensionData: ExtensionData): ColorThemeData;
+		}
+
+		export type TokenStyleDefinition = SemanticTokenRule | ProbeScope[] | TokenStyleValue;
+
+		export type TokenStyleDefinitions = {
+			[P in keyof TokenStyleData]?: TokenStyleDefinition | undefined;
+		};
+
+		type IRawTheme = import('vscode-textmate').IRawTheme;
+		type IOnigLib = import('vscode-textmate').IOnigLib;
+
+		export function parseTextMateGrammar(grammar: Omit<ITMSyntaxExtensionPoint, 'path'>, languageService: languages.ILanguageService): Omit<IValidGrammarDefinition, 'location'>;
+
+		export class TMTokenizationSupportWithLineLimit implements languages.ITokenizationSupport {
+			constructor(languageId: string, encodedLanguageId: languages.LanguageId, actual: TMTokenization, _configurationService: IConfigurationService);
+			getInitialState(): languages.IState;
+			tokenize(line: string, hasEOL: boolean, state: languages.IState): TokenizationResult;
+			tokenizeEncoded(line: string, hasEOL: boolean, state: import('vscode-textmate').StackElement): EncodedTokenizationResult;
+		}
+
+		export class TMTokenization extends Disposable implements languages.ITokenizationSupport {
+			readonly onDidEncounterLanguage: IEvent<languages.LanguageId>;
+			constructor(grammar: import('vscode-textmate').IGrammar, initialState: import('vscode-textmate').StackElement, containsEmbeddedLanguages: boolean);
+			getInitialState(): languages.IState;
+			tokenize(line: string, hasEOL: boolean, state: languages.IState): TokenizationResult;
+			tokenizeEncoded(line: string, hasEOL: boolean, state: import('vscode-textmate').StackElement): EncodedTokenizationResult;
+		}
+
+		export interface ITMGrammarFactoryHost {
+			logTrace(msg: string): void;
+			logError(msg: string, err: any): void;
+			readFile(resource: Uri): Promise<string>;
+		}
+
+		export interface ICreateGrammarResult {
+			languageId: string;
+			grammar: import('vscode-textmate').IGrammar | null;
+			initialState: import('vscode-textmate').StackElement;
+			containsEmbeddedLanguages: boolean;
+		}
+
+		export class TMGrammarFactory extends Disposable {
+			constructor(host: ITMGrammarFactoryHost, grammarDefinitions: IValidGrammarDefinition[], vscodeTextmate: typeof import('vscode-textmate'), onigLib: Promise<import('vscode-textmate').IOnigLib>);
+			has(languageId: string): boolean;
+			setTheme(theme: import('vscode-textmate').IRawTheme, colorMap: string[]): void;
+			getColorMap(): string[];
+			createGrammar(languageId: string, encodedLanguageId: number): Promise<ICreateGrammarResult>;
+		}
+
+		export interface IEmbeddedLanguagesMap {
+			[scopeName: string]: string;
+		}
+
+		export interface TokenTypesContribution {
+			[scopeName: string]: string;
+		}
+
+		export interface ITMSyntaxExtensionPoint {
+			language: string;
+			scopeName: string;
+			path: string;
+			embeddedLanguages: IEmbeddedLanguagesMap;
+			tokenTypes: TokenTypesContribution;
+			injectTo: string[];
+		}
+
+		export interface IValidGrammarDefinition {
+			location: Uri;
+			language?: string;
+			scopeName: string;
+			embeddedLanguages: IValidEmbeddedLanguagesMap;
+			tokenTypes: IValidTokenTypeMap;
+			injectTo?: string[];
+		}
+
+		export interface IValidEmbeddedLanguagesMap {
+			[scopeName: string]: languages.LanguageId;
+		}
+
+		export interface IValidTokenTypeMap {
+			[selector: string]: languages.StandardTokenType;
+		}
+
+
+		export abstract class AbstractKeybindingService extends Disposable implements IKeybindingService {
+			protected _commandService: ICommandService;
+			protected _telemetryService: any;
+			protected _logService: ILogService;
+			_serviceBrand: undefined;
+			protected readonly _onDidUpdateKeybindings: Emitter<IKeybindingEvent>;
+			get onDidUpdateKeybindings(): IEvent<IKeybindingEvent>;
+			protected _logging: boolean;
+			get inChordMode(): boolean;
+			dispose(): void;
+			protected abstract _getResolver(): KeybindingResolver;
+			protected abstract _documentHasFocus(): boolean;
+			abstract resolveKeybinding(keybinding: Keybinding): ResolvedKeybinding[];
+			abstract resolveKeyboardEvent(keyboardEvent: IKeyboardEvent): ResolvedKeybinding;
+			abstract resolveUserBinding(userBinding: string): ResolvedKeybinding[];
+			abstract registerSchemaContribution(contribution: KeybindingsSchemaContribution): void;
+			abstract _dumpDebugInfo(): string;
+			abstract _dumpDebugInfoJSON(): string;
+			getDefaultKeybindingsContent(): string;
+			toggleLogging(): boolean;
+			protected _log(str: string): void;
+			getDefaultKeybindings(): readonly ResolvedKeybindingItem[];
+			getKeybindings(): readonly ResolvedKeybindingItem[];
+			customKeybindingsCount(): number;
+			lookupKeybindings(commandId: string): ResolvedKeybinding[];
+			lookupKeybinding(commandId: string, context?: IContextKeyService): ResolvedKeybinding | undefined;
+			dispatchEvent(e: IKeyboardEvent, target: IContextKeyServiceTarget): boolean;
+			softDispatch(e: IKeyboardEvent, target: IContextKeyServiceTarget): IResolveResult | null;
+			dispatchByUserSettingsLabel(userSettingsLabel: string, target: IContextKeyServiceTarget): void;
+			protected _dispatch(e: IKeyboardEvent, target: IContextKeyServiceTarget): boolean;
+			protected _singleModifierDispatch(e: IKeyboardEvent, target: IContextKeyServiceTarget): boolean;
+			mightProducePrintableCharacter(event: IKeyboardEvent): boolean;
+		}
+
+		export class StandaloneKeybindingService extends AbstractKeybindingService {
+			setUserKeybindings(userKeybindings: IUserFriendlyKeybinding[]): void;
+			addDynamicKeybinding(commandId: string, _keybinding: number, handler: ICommandHandler, when: ContextKeyExpression | undefined): IDisposable;
+			protected _getResolver(): KeybindingResolver;
+			protected _documentHasFocus(): boolean;
+			resolveKeybinding(keybinding: Keybinding): ResolvedKeybinding[];
+			resolveKeyboardEvent(keyboardEvent: IKeyboardEvent): ResolvedKeybinding;
+			resolveUserBinding(userBinding: string): ResolvedKeybinding[];
+			_dumpDebugInfo(): string;
+			_dumpDebugInfoJSON(): string;
+			registerSchemaContribution(contribution: KeybindingsSchemaContribution): void;
+		}
+
+		export class StandaloneConfigurationService extends Disposable implements IConfigurationService {
+			readonly _serviceBrand: undefined;
+			readonly onDidChangeConfiguration: IEvent<IConfigurationChangeEvent>;
+			constructor();
+			updateUserConfiguration(configurationJson: string): void;
+			getValue<T>(): T;
+			getValue<T>(section: string): T;
+			getValue<T>(overrides: IConfigurationOverrides): T;
+			getValue<T>(section: string, overrides: IConfigurationOverrides): T;
+			updateValues(values: [string, any][]): Promise<void>;
+			updateValue(key: string, value: any, arg3?: any, arg4?: any): Promise<void>;
+			inspect<C>(key: string, options?: IConfigurationOverrides): IConfigurationValue<C>;
+			keys(): any;
+			reloadConfiguration(): Promise<void>;
+			getConfigurationData(): IConfigurationData | null;
+		}
+
+		export class StandaloneTextModelService implements ITextModelService {
+			_serviceBrand: undefined;
+			constructor(modelService: IModelService);
+			createModelReference(resource: Uri): Promise<IReference<IResolvedTextEditorModel>>;
+			registerTextModelContentProvider(scheme: string, provider: ITextModelContentProvider): IDisposable;
+			canHandleResource(resource: Uri): boolean;
+		}
+
+
+		export abstract class AbstractCodeEditorService extends Disposable implements ICodeEditorService {
+			readonly _serviceBrand: undefined;
+			readonly onCodeEditorAdd: IEvent<editor.ICodeEditor>;
+			readonly onCodeEditorRemove: IEvent<editor.ICodeEditor>;
+			readonly onDiffEditorAdd: IEvent<editor.IDiffEditor>;
+			readonly onDiffEditorRemove: IEvent<editor.IDiffEditor>;
+			readonly onDidChangeTransientModelProperty: IEvent<editor.ITextModel>;
+			protected readonly _onDecorationTypeRegistered: Emitter<string>;
+			onDecorationTypeRegistered: IEvent<string>;
+			protected _globalStyleSheet: GlobalStyleSheet | null;
+			constructor(_themeService: editor.IThemeService);
+			addCodeEditor(editor: editor.ICodeEditor): void;
+			removeCodeEditor(editor: editor.ICodeEditor): void;
+			listCodeEditors(): editor.ICodeEditor[];
+			addDiffEditor(editor: editor.IDiffEditor): void;
+			removeDiffEditor(editor: editor.IDiffEditor): void;
+			listDiffEditors(): editor.IDiffEditor[];
+			getFocusedCodeEditor(): editor.ICodeEditor | null;
+			protected _createGlobalStyleSheet(): GlobalStyleSheet;
+			_removeEditorStyleSheets(editorId: string): void;
+			registerDecorationType(description: string, key: string, options: editor.IDecorationRenderOptions, parentTypeKey?: string, editor?: editor.ICodeEditor): void;
+			removeDecorationType(key: string): void;
+			resolveDecorationOptions(decorationTypeKey: string, writable: boolean): editor.IModelDecorationOptions;
+			resolveDecorationCSSRules(decorationTypeKey: string): any;
+			setModelProperty(resource: Uri, key: string, value: any): void;
+			getModelProperty(resource: Uri, key: string): any;
+			getTransientModelProperty(model: editor.ITextModel, key: string): any;
+			getTransientModelProperties(model: editor.ITextModel): [string, any][] | undefined;
+			abstract getActiveCodeEditor(): editor.ICodeEditor | null;
+			abstract openCodeEditor(input: IResourceEditorInput, source: editor.ICodeEditor | null, sideBySide?: boolean): Promise<editor.ICodeEditor | null>;
+		}
+
+		export class GlobalStyleSheet {
+			get sheet(): CSSStyleSheet;
+			constructor(styleSheet: HTMLStyleElement);
+			ref(): void;
+			unref(): void;
+			insertRule(rule: string, index?: number): void;
+			removeRulesContainingSelector(ruleName: string): void;
+		}
+
+		export interface IModelDecorationOptionsProvider extends IDisposable {
+			refCount: number;
+			getOptions(codeEditorService: AbstractCodeEditorService, writable: boolean): editor.IModelDecorationOptions;
+			resolveDecorationCSSRules(): CSSRuleList;
+		}
+
+		export const ICodeEditorService: ServiceIdentifier<ICodeEditorService>;
+
+		export interface ICodeEditorService {
+			readonly _serviceBrand: undefined;
+			readonly onCodeEditorAdd: IEvent<editor.ICodeEditor>;
+			readonly onCodeEditorRemove: IEvent<editor.ICodeEditor>;
+			readonly onDiffEditorAdd: IEvent<editor.IDiffEditor>;
+			readonly onDiffEditorRemove: IEvent<editor.IDiffEditor>;
+			readonly onDidChangeTransientModelProperty: IEvent<editor.ITextModel>;
+			readonly onDecorationTypeRegistered: IEvent<string>;
+			addCodeEditor(editor: editor.ICodeEditor): void;
+			removeCodeEditor(editor: editor.ICodeEditor): void;
+			listCodeEditors(): readonly editor.ICodeEditor[];
+			addDiffEditor(editor: editor.IDiffEditor): void;
+			removeDiffEditor(editor: editor.IDiffEditor): void;
+			listDiffEditors(): readonly editor.IDiffEditor[];
+			/**
+			 * Returns the current focused code editor (if the focus is in the editor or in an editor widget) or null.
+			 */
+			getFocusedCodeEditor(): editor.ICodeEditor | null;
+			registerDecorationType(description: string, key: string, options: editor.IDecorationRenderOptions, parentTypeKey?: string, editor?: editor.ICodeEditor): void;
+			removeDecorationType(key: string): void;
+			resolveDecorationOptions(typeKey: string, writable: boolean): editor.IModelDecorationOptions;
+			resolveDecorationCSSRules(decorationTypeKey: string): CSSRuleList | null;
+			setModelProperty(resource: Uri, key: string, value: any): void;
+			getModelProperty(resource: Uri, key: string): any;
+			getTransientModelProperty(model: editor.ITextModel, key: string): any;
+			getTransientModelProperties(model: editor.ITextModel): [string, any][] | undefined;
+			getActiveCodeEditor(): editor.ICodeEditor | null;
+			openCodeEditor(input: ITextResourceEditorInput, source: editor.ICodeEditor | null, sideBySide?: boolean): Promise<editor.ICodeEditor | null>;
+		}
+
+		export class StandaloneCodeEditorService extends AbstractCodeEditorService {
+			constructor(contextKeyService: IContextKeyService, themeService: editor.IThemeService);
+			setActiveCodeEditor(activeCodeEditor: editor.ICodeEditor | null): void;
+			getActiveCodeEditor(): editor.ICodeEditor | null;
+			openCodeEditor(input: IResourceEditorInput, source: editor.ICodeEditor | null, sideBySide?: boolean): Promise<editor.ICodeEditor | null>;
+			doOpenEditor(editor: editor.ICodeEditor, input: ITextResourceEditorInput): editor.ICodeEditor | null;
+		}
+
+
+		export interface FoldingStateMemento {
+			collapsedRegions?: CollapseMemento;
+			lineCount?: number;
+			provider?: string;
+			foldedImports?: boolean;
+		}
+
+		export interface RangeProvider {
+			readonly id: string;
+			compute(cancelationToken: CancellationToken, notifyTooMany: (max: number) => void): Promise<FoldingRegions | null>;
+			dispose(): void;
+		}
+
+		export class FoldingController extends Disposable implements editor.IEditorContribution {
+			static readonly ID = 'editor.contrib.folding';
+			static get(editor: editor.ICodeEditor): FoldingController | null;
+			/**
+			 * Store view state.
+			 */
+			saveViewState(): FoldingStateMemento | undefined;
+			/**
+			 * Restore view state.
+			 */
+			restoreViewState(state: FoldingStateMemento): void;
+			getFoldingModel(): any;
+			reveal(position: IPosition): void;
+		}
+		export interface ILineRange {
+			startLineNumber: number;
+			endLineNumber: number;
+		}
+
+		export class FoldingRegions {
+			constructor(startIndexes: Uint32Array, endIndexes: Uint32Array, types?: Array<string | undefined>);
+			get length(): number;
+			getStartLineNumber(index: number): number;
+			getEndLineNumber(index: number): number;
+			getType(index: number): string | undefined;
+			hasTypes(): boolean;
+			isCollapsed(index: number): boolean;
+			setCollapsed(index: number, newState: boolean): void;
+			setCollapsedAllOfType(type: string, newState: boolean): boolean;
+			toRegion(index: number): FoldingRegion;
+			getParentIndex(index: number): number;
+			contains(index: number, line: number): boolean;
+			findRange(line: number): number;
+			toString(): any;
+			equals(b: FoldingRegions): boolean;
+		}
+
+		export class FoldingRegion {
+			constructor(ranges: FoldingRegions, index: number);
+			get startLineNumber(): number;
+			get endLineNumber(): number;
+			get regionIndex(): number;
+			get parentIndex(): number;
+			get isCollapsed(): boolean;
+			containedBy(range: ILineRange): boolean;
+			containsLine(lineNumber: number): boolean;
+			hidesLine(lineNumber: number): boolean;
+		}
+
+		/**
+		 * Folds all regions for which the lines start with a given regex
+		 * @param foldingModel the folding model
+		 */
+		export function setCollapseStateForMatchingLines(foldingModel: FoldingModel, regExp: RegExp, doCollapse: boolean): void;
+
+		export class FoldingModel {
+			readonly onDidChange: IEvent<FoldingModelChangeEvent>;
+			get regions(): FoldingRegions;
+			get textModel(): editor.ITextModel;
+			get isInitialized(): boolean;
+			get decorationProvider(): IDecorationProvider;
+			constructor(textModel: editor.ITextModel, decorationProvider: IDecorationProvider);
+			toggleCollapseState(toggledRegions: FoldingRegion[]): void;
+			update(newRegions: FoldingRegions, blockedLineNumers?: number[]): void;
+			/**
+			 * Collapse state memento, for persistence only
+			 */
+			getMemento(): CollapseMemento | undefined;
+			/**
+			 * Apply persisted state, for persistence only
+			 */
+			applyMemento(state: CollapseMemento): void;
+			dispose(): void;
+			getAllRegionsAtLine(lineNumber: number, filter?: (r: FoldingRegion, level: number) => boolean): FoldingRegion[];
+			getRegionAtLine(lineNumber: number): FoldingRegion | null;
+		}
+
+		export type CollapseMemento = ILineRange[];
+
+		export interface FoldingModelChangeEvent {
+			model: FoldingModel;
+			collapseStateChanged?: FoldingRegion[];
+		}
+
+		export interface IDecorationProvider {
+			getDecorationOption(isCollapsed: boolean, isHidden: boolean): editor.IModelDecorationOptions;
+			deltaDecorations(oldDecorations: string[], newDecorations: editor.IModelDeltaDecoration[]): string[];
+		}
+
+
+		export interface IPlatformEditorModel {
+			/**
+			 * Emitted when the model is about to be disposed.
+			 */
+			readonly onWillDispose: IEvent<void>;
+			/**
+			 * Resolves the model.
+			 */
+			resolve(): Promise<void>;
+			/**
+			 * Find out if the editor model was resolved or not.
+			 */
+			isResolved(): boolean;
+			/**
+			 * Find out if this model has been disposed.
+			 */
+			isDisposed(): boolean;
+			/**
+			 * Dispose associated resources
+			 */
+			dispose(): void;
+		}
+
+		export interface IResourceEditorInput extends IBaseResourceEditorInput {
+			/**
+			 * The resource Uri of the resource to open.
+			 */
+			readonly resource: Uri;
+		}
+
+		export interface ITextResourceEditorInput extends IResourceEditorInput, IBaseTextResourceEditorInput {
+			/**
+			 * Optional options to use when opening the text input.
+			 */
+			options?: ITextEditorOptions;
+		}
+
+		export interface IResourceEditorInput extends IBaseResourceEditorInput {
+			/**
+			 * The resource Uri of the resource to open.
+			 */
+			readonly resource: Uri;
+		}
+
+		export interface IBaseUntypedEditorInput {
+			/**
+			 * Optional options to use when opening the input.
+			 */
+			options?: editor.IEditorOptions;
+			/**
+			 * Label to show for the input.
+			 */
+			readonly label?: string;
+			/**
+			 * Description to show for the input.
+			 */
+			readonly description?: string;
+		}
+
+		export interface IBaseResourceEditorInput extends IBaseUntypedEditorInput {
+			/**
+			 * Hint to indicate that this input should be treated as a
+			 * untitled file.
+			 *
+			 * Without this hint, the editor service will make a guess by
+			 * looking at the scheme of the resource(s).
+			 *
+			 * Use `forceUntitled: true` when you pass in a `resource` that
+			 * does not use the `untitled` scheme. The `resource` will then
+			 * be used as associated path when saving the untitled file.
+			 */
+			readonly forceUntitled?: boolean;
+		}
+
+		export interface ITextEditorOptions extends editor.IEditorOptions {
+			/**
+			 * Text editor selection.
+			 */
+			selection?: ITextEditorSelection;
+			/**
+			 * Option to control the text editor selection reveal type.
+			 * Defaults to TextEditorSelectionRevealType.Center
+			 */
+			selectionRevealType?: TextEditorSelectionRevealType;
+		}
+
+		export interface IBaseTextResourceEditorInput extends IBaseResourceEditorInput {
+			/**
+			 * Optional options to use when opening the text input.
+			 */
+			options?: ITextEditorOptions;
+			/**
+			 * The contents of the text input if known. If provided,
+			 * the input will not attempt to load the contents from
+			 * disk and may appear dirty.
+			 */
+			contents?: string;
+			/**
+			 * The encoding of the text input if known.
+			 */
+			encoding?: string;
+			/**
+			 * The identifier of the language id of the text input
+			 * if known to use when displaying the contents.
+			 */
+			languageId?: string;
+		}
+
+		export interface ITextEditorSelection {
+			readonly startLineNumber: number;
+			readonly startColumn: number;
+			readonly endLineNumber?: number;
+			readonly endColumn?: number;
+		}
+
+		export enum TextEditorSelectionRevealType {
+			/**
+			 * Option to scroll vertically or horizontally as necessary and reveal a range centered vertically.
+			 */
+			Center = 0,
+			/**
+			 * Option to scroll vertically or horizontally as necessary and reveal a range centered vertically only if it lies outside the viewport.
+			 */
+			CenterIfOutsideViewport = 1,
+			/**
+			 * Option to scroll vertically or horizontally as necessary and reveal a range close to the top of the viewport, but not quite at the top.
+			 */
+			NearTop = 2,
+			/**
+			 * Option to scroll vertically or horizontally as necessary and reveal a range close to the top of the viewport, but not quite at the top.
+			 * Only if it lies outside the viewport
+			 */
+			NearTopIfOutsideViewport = 3
+		}
+
+		export interface ITextModelService {
+			readonly _serviceBrand: undefined;
+			/**
+			 * Provided a resource Uri, it will return a model reference
+			 * which should be disposed once not needed anymore.
+			 */
+			createModelReference(resource: Uri): Promise<IReference<IResolvedTextEditorModel>>;
+			/**
+			 * Registers a specific `scheme` content provider.
+			 */
+			registerTextModelContentProvider(scheme: string, provider: ITextModelContentProvider): IDisposable;
+			/**
+			 * Check if the given resource can be resolved to a text model.
+			 */
+			canHandleResource(resource: Uri): boolean;
+		}
+
+		export interface ITextModelContentProvider {
+			/**
+			 * Given a resource, return the content of the resource as `editor.ITextModel`.
+			 */
+			provideTextContent(resource: Uri): Promise<editor.ITextModel | null> | null;
+		}
+
+		export interface ITextEditorModel extends IPlatformEditorModel {
+			/**
+			 * Provides access to the underlying `editor.ITextModel`.
+			 */
+			readonly textEditorModel: editor.ITextModel | null;
+			/**
+			 * Creates a snapshot of the model's contents.
+			 */
+			createSnapshot(this: IResolvedTextEditorModel): editor.ITextSnapshot;
+			createSnapshot(this: ITextEditorModel): editor.ITextSnapshot | null;
+			/**
+			 * Signals if this model is readonly or not.
+			 */
+			isReadonly(): boolean;
+			/**
+			 * The language id of the text model if known.
+			 */
+			getLanguageId(): string | undefined;
+		}
+
+		export interface IResolvedTextEditorModel extends ITextEditorModel {
+			/**
+			 * Same as ITextEditorModel#textEditorModel, but never null.
+			 */
+			readonly textEditorModel: editor.ITextModel;
+		}
+
+		export const IModelService: ServiceIdentifier<IModelService>;
+
+		export type DocumentTokensProvider = languages.DocumentSemanticTokensProvider | languages.DocumentRangeSemanticTokensProvider;
+
+		export interface IModelService {
+			readonly _serviceBrand: undefined;
+			destroyModel(resource: Uri): void;
+			getModels(): editor.ITextModel[];
+			getCreationOptions(language: string, resource: Uri, isForSimpleWidget: boolean): editor.ITextModelCreationOptions;
+			getModel(resource: Uri): editor.ITextModel | null;
+			onModelAdded: IEvent<editor.ITextModel>;
+			onModelRemoved: IEvent<editor.ITextModel>;
+			onModelLanguageChanged: IEvent<{
+				model: editor.ITextModel;
+				oldLanguageId: string;
+			}>;
+		}
+
+		export interface IEditorSemanticHighlightingOptions {
+			enabled: true | false | 'configuredByTheme';
+		}
+
+		export class ModelService extends Disposable implements IModelService {
+			static MAX_MEMORY_FOR_CLOSED_FILES_UNDO_STACK: number;
+			_serviceBrand: undefined;
+			readonly onModelAdded: IEvent<editor.ITextModel>;
+			readonly onModelRemoved: IEvent<editor.ITextModel>;
+			readonly onModelLanguageChanged: any;
+			getCreationOptions(language: string, resource: Uri | undefined, isForSimpleWidget: boolean): editor.ITextModelCreationOptions;
+			setMode(model: editor.ITextModel, languageSelection: languages.ILanguageSelection): void;
+			destroyModel(resource: Uri): void;
+			getModels(): editor.ITextModel[];
+			getModel(resource: Uri): editor.ITextModel | null;
+			protected _schemaShouldMaintainUndoRedoElements(resource: Uri): boolean;
+		}
+
+		export interface ILineSequence {
+			getLineContent(lineNumber: number): string;
+		}
+	}
+
+	//dtsv=3
