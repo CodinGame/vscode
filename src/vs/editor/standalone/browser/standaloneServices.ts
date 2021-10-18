@@ -131,10 +131,10 @@ export module StaticServices {
 		return [result, instantiationService];
 	}
 
-	export const instantiationService = define<IInstantiationService>(IInstantiationService, () => new InstantiationService(_serviceCollection, true));
+	export const instantiationService: LazyStaticService<IInstantiationService> = define<IInstantiationService>(IInstantiationService, () => new InstantiationService(_serviceCollection, true));
 
 	const configurationServiceImpl = new SimpleConfigurationService();
-	export const configurationService = define(IConfigurationService, () => configurationServiceImpl);
+	export const configurationService: LazyStaticService<IConfigurationService> = define(IConfigurationService, () => configurationServiceImpl);
 
 	/**
 	 * @internal
@@ -176,11 +176,11 @@ export module StaticServices {
 	 */
 	export const markerService = define(IMarkerService, () => new MarkerService());
 
-	export const modeService = define(IModeService, (o) => new ModeServiceImpl());
+	export const modeService: LazyStaticService<IModeService> = define(IModeService, (o) => new ModeServiceImpl());
 
-	export const standaloneThemeService = define(IStandaloneThemeService, () => new StandaloneThemeServiceImpl());
+	export const standaloneThemeService: LazyStaticService<IStandaloneThemeService> = define(IStandaloneThemeService, () => new StandaloneThemeServiceImpl());
 
-	export const logService = define(ILogService, () => new LogService(new ConsoleLogger()));
+	export const logService: LazyStaticService<ILogService> = define(ILogService, () => new LogService(new ConsoleLogger()));
 
 	/**
 	 * @internal
@@ -189,7 +189,7 @@ export module StaticServices {
 
 	export const languageConfigurationService = define(ILanguageConfigurationService, (o) => new LanguageConfigurationService(configurationService.get(o), modeService.get(o)));
 
-	export const modelService = define(
+	export const modelService: LazyStaticService<IModelService> = define(
 		IModelService,
 		(o) =>
 			new ModelServiceImpl(
@@ -208,9 +208,9 @@ export module StaticServices {
 	 */
 	export const markerDecorationsService = define(IMarkerDecorationsService, (o) => new MarkerDecorationsService(modelService.get(o), markerService.get(o)));
 
-	export const contextKeyService = define(IContextKeyService, (o) => new ContextKeyService(configurationService.get(o)));
+	export const contextKeyService: LazyStaticService<IContextKeyService> = define(IContextKeyService, (o) => new ContextKeyService(configurationService.get(o)));
 
-	export const codeEditorService = define(ICodeEditorService, (o) => new StandaloneCodeEditorServiceImpl(null, contextKeyService.get(o), standaloneThemeService.get(o)));
+	export const codeEditorService: LazyStaticService<ICodeEditorService> = define(ICodeEditorService, (o) => new StandaloneCodeEditorServiceImpl(null, contextKeyService.get(o), standaloneThemeService.get(o)));
 
 	/**
 	 * @internal
