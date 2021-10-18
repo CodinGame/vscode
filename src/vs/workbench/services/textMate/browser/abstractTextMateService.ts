@@ -30,6 +30,58 @@ import { TMGrammarFactory } from 'vs/workbench/services/textMate/common/TMGramma
 import { IExtensionResourceLoaderService } from 'vs/workbench/services/extensionResourceLoader/common/extensionResourceLoader';
 import { IProgressService, ProgressLocation } from 'vs/platform/progress/common/progress';
 
+export function parseTextMateGrammar(grammar: Omit<ITMSyntaxExtensionPoint, 'path'>, modeService: IModeService): Omit<IValidGrammarDefinition, 'location'> {
+
+	const embeddedLanguages: IValidEmbeddedLanguagesMap = Object.create(null);
+	if (grammar.embeddedLanguages) {
+		let scopes = Object.keys(grammar.embeddedLanguages);
+		for (let i = 0, len = scopes.length; i < len; i++) {
+			let scope = scopes[i];
+			let language = grammar.embeddedLanguages[scope];
+			if (typeof language !== 'string') {
+				// never hurts to be too careful
+				continue;
+			}
+			const validLanguageId = modeService.validateLanguageId(language);
+			if (validLanguageId) {
+				embeddedLanguages[scope] = modeService.languageIdCodec.encodeLanguageId(validLanguageId);
+			}
+		}
+	}
+
+	const tokenTypes: IValidTokenTypeMap = Object.create(null);
+	if (grammar.tokenTypes) {
+		const scopes = Object.keys(grammar.tokenTypes);
+		for (const scope of scopes) {
+			const tokenType = grammar.tokenTypes[scope];
+			switch (tokenType) {
+				case 'string':
+					tokenTypes[scope] = StandardTokenType.String;
+					break;
+				case 'other':
+					tokenTypes[scope] = StandardTokenType.Other;
+					break;
+				case 'comment':
+					tokenTypes[scope] = StandardTokenType.Comment;
+					break;
+			}
+		}
+	}
+
+	let validLanguageId: string | null = null;
+	if (grammar.language) {
+		validLanguageId = modeService.validateLanguageId(grammar.language);
+	}
+
+	return {
+		language: validLanguageId ? validLanguageId : undefined,
+		scopeName: grammar.scopeName,
+		embeddedLanguages: embeddedLanguages,
+		tokenTypes: tokenTypes,
+		injectTo: grammar.injectTo,
+	};
+}
+
 export abstract class AbstractTextMateService extends Disposable implements ITextMateService {
 	public _serviceBrand: undefined;
 
@@ -91,55 +143,9 @@ export abstract class AbstractTextMateService extends Disposable implements ITex
 						continue;
 					}
 					const grammarLocation = resources.joinPath(extension.description.extensionLocation, grammar.path);
-
-					const embeddedLanguages: IValidEmbeddedLanguagesMap = Object.create(null);
-					if (grammar.embeddedLanguages) {
-						let scopes = Object.keys(grammar.embeddedLanguages);
-						for (let i = 0, len = scopes.length; i < len; i++) {
-							let scope = scopes[i];
-							let language = grammar.embeddedLanguages[scope];
-							if (typeof language !== 'string') {
-								// never hurts to be too careful
-								continue;
-							}
-							const validLanguageId = this._modeService.validateLanguageId(language);
-							if (validLanguageId) {
-								embeddedLanguages[scope] = this._modeService.languageIdCodec.encodeLanguageId(validLanguageId);
-							}
-						}
-					}
-
-					const tokenTypes: IValidTokenTypeMap = Object.create(null);
-					if (grammar.tokenTypes) {
-						const scopes = Object.keys(grammar.tokenTypes);
-						for (const scope of scopes) {
-							const tokenType = grammar.tokenTypes[scope];
-							switch (tokenType) {
-								case 'string':
-									tokenTypes[scope] = StandardTokenType.String;
-									break;
-								case 'other':
-									tokenTypes[scope] = StandardTokenType.Other;
-									break;
-								case 'comment':
-									tokenTypes[scope] = StandardTokenType.Comment;
-									break;
-							}
-						}
-					}
-
-					let validLanguageId: string | null = null;
-					if (grammar.language) {
-						validLanguageId = this._modeService.validateLanguageId(grammar.language);
-					}
-
 					this._grammarDefinitions.push({
 						location: grammarLocation,
-						language: validLanguageId ? validLanguageId : undefined,
-						scopeName: grammar.scopeName,
-						embeddedLanguages: embeddedLanguages,
-						tokenTypes: tokenTypes,
-						injectTo: grammar.injectTo,
+						...parseTextMateGrammar(grammar, this._modeService)
 					});
 				}
 			}
