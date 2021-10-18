@@ -76,10 +76,340 @@ function isCharacterPair(something: CharacterPair | null): boolean {
 	);
 }
 
+function extractValidCommentRule(languageId: string, configuration: ILanguageConfiguration): CommentRule | undefined {
+	const source = configuration.comments;
+	if (typeof source === 'undefined') {
+		return undefined;
+	}
+	if (!types.isObject(source)) {
+		console.warn(`[${languageId}]: language configuration: expected \`comments\` to be an object.`);
+		return undefined;
+	}
+
+	let result: CommentRule | undefined = undefined;
+	if (typeof source.lineComment !== 'undefined') {
+		if (typeof source.lineComment !== 'string') {
+			console.warn(`[${languageId}]: language configuration: expected \`comments.lineComment\` to be a string.`);
+		} else {
+			result = result || {};
+			result.lineComment = source.lineComment;
+		}
+	}
+	if (typeof source.blockComment !== 'undefined') {
+		if (!isCharacterPair(source.blockComment)) {
+			console.warn(`[${languageId}]: language configuration: expected \`comments.blockComment\` to be an array of two strings.`);
+		} else {
+			result = result || {};
+			result.blockComment = source.blockComment;
+		}
+	}
+	return result;
+}
+
+function extractValidBrackets(languageId: string, configuration: ILanguageConfiguration): CharacterPair[] | undefined {
+	const source = configuration.brackets;
+	if (typeof source === 'undefined') {
+		return undefined;
+	}
+	if (!Array.isArray(source)) {
+		console.warn(`[${languageId}]: language configuration: expected \`brackets\` to be an array.`);
+		return undefined;
+	}
+
+	let result: CharacterPair[] | undefined = undefined;
+	for (let i = 0, len = source.length; i < len; i++) {
+		const pair = source[i];
+		if (!isCharacterPair(pair)) {
+			console.warn(`[${languageId}]: language configuration: expected \`brackets[${i}]\` to be an array of two strings.`);
+			continue;
+		}
+
+		result = result || [];
+		result.push(pair);
+	}
+	return result;
+}
+
+function extractValidAutoClosingPairs(languageId: string, configuration: ILanguageConfiguration): IAutoClosingPairConditional[] | undefined {
+	const source = configuration.autoClosingPairs;
+	if (typeof source === 'undefined') {
+		return undefined;
+	}
+	if (!Array.isArray(source)) {
+		console.warn(`[${languageId}]: language configuration: expected \`autoClosingPairs\` to be an array.`);
+		return undefined;
+	}
+
+	let result: IAutoClosingPairConditional[] | undefined = undefined;
+	for (let i = 0, len = source.length; i < len; i++) {
+		const pair = source[i];
+		if (Array.isArray(pair)) {
+			if (!isCharacterPair(pair)) {
+				console.warn(`[${languageId}]: language configuration: expected \`autoClosingPairs[${i}]\` to be an array of two strings or an object.`);
+				continue;
+			}
+			result = result || [];
+			result.push({ open: pair[0], close: pair[1] });
+		} else {
+			if (!types.isObject(pair)) {
+				console.warn(`[${languageId}]: language configuration: expected \`autoClosingPairs[${i}]\` to be an array of two strings or an object.`);
+				continue;
+			}
+			if (typeof pair.open !== 'string') {
+				console.warn(`[${languageId}]: language configuration: expected \`autoClosingPairs[${i}].open\` to be a string.`);
+				continue;
+			}
+			if (typeof pair.close !== 'string') {
+				console.warn(`[${languageId}]: language configuration: expected \`autoClosingPairs[${i}].close\` to be a string.`);
+				continue;
+			}
+			if (typeof pair.notIn !== 'undefined') {
+				if (!isStringArr(pair.notIn)) {
+					console.warn(`[${languageId}]: language configuration: expected \`autoClosingPairs[${i}].notIn\` to be a string array.`);
+					continue;
+				}
+			}
+			result = result || [];
+			result.push({ open: pair.open, close: pair.close, notIn: pair.notIn });
+		}
+	}
+	return result;
+}
+
+function extractValidSurroundingPairs(languageId: string, configuration: ILanguageConfiguration): IAutoClosingPair[] | undefined {
+	const source = configuration.surroundingPairs;
+	if (typeof source === 'undefined') {
+		return undefined;
+	}
+	if (!Array.isArray(source)) {
+		console.warn(`[${languageId}]: language configuration: expected \`surroundingPairs\` to be an array.`);
+		return undefined;
+	}
+
+	let result: IAutoClosingPair[] | undefined = undefined;
+	for (let i = 0, len = source.length; i < len; i++) {
+		const pair = source[i];
+		if (Array.isArray(pair)) {
+			if (!isCharacterPair(pair)) {
+				console.warn(`[${languageId}]: language configuration: expected \`surroundingPairs[${i}]\` to be an array of two strings or an object.`);
+				continue;
+			}
+			result = result || [];
+			result.push({ open: pair[0], close: pair[1] });
+		} else {
+			if (!types.isObject(pair)) {
+				console.warn(`[${languageId}]: language configuration: expected \`surroundingPairs[${i}]\` to be an array of two strings or an object.`);
+				continue;
+			}
+			if (typeof pair.open !== 'string') {
+				console.warn(`[${languageId}]: language configuration: expected \`surroundingPairs[${i}].open\` to be a string.`);
+				continue;
+			}
+			if (typeof pair.close !== 'string') {
+				console.warn(`[${languageId}]: language configuration: expected \`surroundingPairs[${i}].close\` to be a string.`);
+				continue;
+			}
+			result = result || [];
+			result.push({ open: pair.open, close: pair.close });
+		}
+	}
+	return result;
+}
+
+function extractValidColorizedBracketPairs(languageId: string, configuration: ILanguageConfiguration): CharacterPair[] | undefined {
+	const source = configuration.colorizedBracketPairs;
+	if (typeof source === 'undefined') {
+		return undefined;
+	}
+	if (!Array.isArray(source)) {
+		console.warn(`[${languageId}]: language configuration: expected \`colorizedBracketPairs\` to be an array.`);
+		return undefined;
+	}
+
+	let result: CharacterPair[] | undefined = undefined;
+	for (let i = 0, len = source.length; i < len; i++) {
+		const pair = source[i];
+		if (!isCharacterPair(pair)) {
+			console.warn(`[${languageId}]: language configuration: expected \`colorizedBracketPairs[${i}]\` to be an array of two strings.`);
+			continue;
+		}
+		result = result || [];
+		result.push([pair[0], pair[1]]);
+
+	}
+	return result;
+}
+
+function extractValidOnEnterRules(languageId: string, configuration: ILanguageConfiguration): OnEnterRule[] | undefined {
+	const source = configuration.onEnterRules;
+	if (typeof source === 'undefined') {
+		return undefined;
+	}
+	if (!Array.isArray(source)) {
+		console.warn(`[${languageId}]: language configuration: expected \`onEnterRules\` to be an array.`);
+		return undefined;
+	}
+
+	let result: OnEnterRule[] | undefined = undefined;
+	for (let i = 0, len = source.length; i < len; i++) {
+		const onEnterRule = source[i];
+		if (!types.isObject(onEnterRule)) {
+			console.warn(`[${languageId}]: language configuration: expected \`onEnterRules[${i}]\` to be an object.`);
+			continue;
+		}
+		if (!types.isObject(onEnterRule.action)) {
+			console.warn(`[${languageId}]: language configuration: expected \`onEnterRules[${i}].action\` to be an object.`);
+			continue;
+		}
+		let indentAction: IndentAction;
+		if (onEnterRule.action.indent === 'none') {
+			indentAction = IndentAction.None;
+		} else if (onEnterRule.action.indent === 'indent') {
+			indentAction = IndentAction.Indent;
+		} else if (onEnterRule.action.indent === 'indentOutdent') {
+			indentAction = IndentAction.IndentOutdent;
+		} else if (onEnterRule.action.indent === 'outdent') {
+			indentAction = IndentAction.Outdent;
+		} else {
+			console.warn(`[${languageId}]: language configuration: expected \`onEnterRules[${i}].action.indent\` to be 'none', 'indent', 'indentOutdent' or 'outdent'.`);
+			continue;
+		}
+		const action: EnterAction = { indentAction };
+		if (onEnterRule.action.appendText) {
+			if (typeof onEnterRule.action.appendText === 'string') {
+				action.appendText = onEnterRule.action.appendText;
+			} else {
+				console.warn(`[${languageId}]: language configuration: expected \`onEnterRules[${i}].action.appendText\` to be undefined or a string.`);
+			}
+		}
+		if (onEnterRule.action.removeText) {
+			if (typeof onEnterRule.action.removeText === 'number') {
+				action.removeText = onEnterRule.action.removeText;
+			} else {
+				console.warn(`[${languageId}]: language configuration: expected \`onEnterRules[${i}].action.removeText\` to be undefined or a number.`);
+			}
+		}
+		const beforeText = parseRegex(languageId, `onEnterRules[${i}].beforeText`, onEnterRule.beforeText);
+		if (!beforeText) {
+			continue;
+		}
+		const resultingOnEnterRule: OnEnterRule = { beforeText, action };
+		if (onEnterRule.afterText) {
+			const afterText = parseRegex(languageId, `onEnterRules[${i}].afterText`, onEnterRule.afterText);
+			if (afterText) {
+				resultingOnEnterRule.afterText = afterText;
+			}
+		}
+		if (onEnterRule.previousLineText) {
+			const previousLineText = parseRegex(languageId, `onEnterRules[${i}].previousLineText`, onEnterRule.previousLineText);
+			if (previousLineText) {
+				resultingOnEnterRule.previousLineText = previousLineText;
+			}
+		}
+		result = result || [];
+		result.push(resultingOnEnterRule);
+	}
+
+	return result;
+}
+
+function parseRegex(languageId: string, confPath: string, value: string | IRegExp): RegExp | undefined {
+	if (typeof value === 'string') {
+		try {
+			return new RegExp(value, '');
+		} catch (err) {
+			console.warn(`[${languageId}]: Invalid regular expression in \`${confPath}\`: `, err);
+			return undefined;
+		}
+	}
+	if (types.isObject(value)) {
+		if (typeof value.pattern !== 'string') {
+			console.warn(`[${languageId}]: language configuration: expected \`${confPath}.pattern\` to be a string.`);
+			return undefined;
+		}
+		if (typeof value.flags !== 'undefined' && typeof value.flags !== 'string') {
+			console.warn(`[${languageId}]: language configuration: expected \`${confPath}.flags\` to be a string.`);
+			return undefined;
+		}
+		try {
+			return new RegExp(value.pattern, value.flags);
+		} catch (err) {
+			console.warn(`[${languageId}]: Invalid regular expression in \`${confPath}\`: `, err);
+			return undefined;
+		}
+	}
+	console.warn(`[${languageId}]: language configuration: expected \`${confPath}\` to be a string or an object.`);
+	return undefined;
+}
+
+function mapIndentationRules(languageId: string, indentationRules: IIndentationRules): IndentationRule | undefined {
+	const increaseIndentPattern = parseRegex(languageId, `indentationRules.increaseIndentPattern`, indentationRules.increaseIndentPattern);
+	if (!increaseIndentPattern) {
+		return undefined;
+	}
+	const decreaseIndentPattern = parseRegex(languageId, `indentationRules.decreaseIndentPattern`, indentationRules.decreaseIndentPattern);
+	if (!decreaseIndentPattern) {
+		return undefined;
+	}
+
+	const result: IndentationRule = {
+		increaseIndentPattern: increaseIndentPattern,
+		decreaseIndentPattern: decreaseIndentPattern
+	};
+
+	if (indentationRules.indentNextLinePattern) {
+		result.indentNextLinePattern = parseRegex(languageId, `indentationRules.indentNextLinePattern`, indentationRules.indentNextLinePattern);
+	}
+	if (indentationRules.unIndentedLinePattern) {
+		result.unIndentedLinePattern = parseRegex(languageId, `indentationRules.unIndentedLinePattern`, indentationRules.unIndentedLinePattern);
+	}
+
+	return result;
+}
+
+export function handleConfig(languageId: string, configuration: ILanguageConfiguration): void {
+	const comments = extractValidCommentRule(languageId, configuration);
+	const brackets = extractValidBrackets(languageId, configuration);
+	const autoClosingPairs = extractValidAutoClosingPairs(languageId, configuration);
+	const surroundingPairs = extractValidSurroundingPairs(languageId, configuration);
+	const colorizedBracketPairs = extractValidColorizedBracketPairs(languageId, configuration);
+	const autoCloseBefore = (typeof configuration.autoCloseBefore === 'string' ? configuration.autoCloseBefore : undefined);
+	const wordPattern = (configuration.wordPattern ? parseRegex(languageId, `wordPattern`, configuration.wordPattern) : undefined);
+	const indentationRules = (configuration.indentationRules ? mapIndentationRules(languageId, configuration.indentationRules) : undefined);
+	let folding: FoldingRules | undefined = undefined;
+	if (configuration.folding) {
+		const markers = configuration.folding.markers;
+		folding = {
+			offSide: configuration.folding.offSide,
+			markers: markers ? { start: new RegExp(markers.start), end: new RegExp(markers.end) } : undefined
+		};
+	}
+	const onEnterRules = extractValidOnEnterRules(languageId, configuration);
+
+	const richEditConfig: ExplicitLanguageConfiguration = {
+		comments,
+		brackets,
+		wordPattern,
+		indentationRules,
+		onEnterRules,
+		autoClosingPairs,
+		surroundingPairs,
+		colorizedBracketPairs,
+		autoCloseBefore,
+		folding,
+		__electricCharacterSupport: undefined,
+	};
+
+	LanguageConfigurationRegistry.register(languageId, richEditConfig, 50);
+}
+
 export class LanguageConfigurationFileHandler {
 
 	private _done: Set<string>;
 
+	/**
+	 * @private
+	 */
 	constructor(
 		@ITextMateService textMateService: ITextMateService,
 		@IModeService private readonly _modeService: IModeService,
@@ -89,10 +419,10 @@ export class LanguageConfigurationFileHandler {
 		this._done = new Set<string>();
 
 		// Listen for hints that a language configuration is needed/usefull and then load it once
-		this._modeService.onDidEncounterLanguage((languageIdentifier) => {
+		this._modeService.onDidEncounterLanguage((languageId) => {
 			// Modes can be instantiated before the extension points have finished registering
 			this._extensionService.whenInstalledExtensionsRegistered().then(() => {
-				this._loadConfigurationsForMode(languageIdentifier);
+				this._loadConfigurationsForMode(languageId);
 			});
 		});
 		textMateService.onDidEncounterLanguage((languageId) => {
@@ -100,6 +430,9 @@ export class LanguageConfigurationFileHandler {
 		});
 	}
 
+	/**
+	 * @private
+	 */
 	private _loadConfigurationsForMode(languageId: string): void {
 		if (this._done.has(languageId)) {
 			return;
@@ -121,338 +454,12 @@ export class LanguageConfigurationFileHandler {
 				console.error(nls.localize('formatError', "{0}: Invalid format, JSON object expected.", configFileLocation.toString()));
 				configuration = {};
 			}
-			this._handleConfig(languageId, configuration);
+			handleConfig(languageId, configuration);
 		}, (err) => {
 			console.error(err);
 		});
 	}
 
-	private _extractValidCommentRule(languageId: string, configuration: ILanguageConfiguration): CommentRule | undefined {
-		const source = configuration.comments;
-		if (typeof source === 'undefined') {
-			return undefined;
-		}
-		if (!types.isObject(source)) {
-			console.warn(`[${languageId}]: language configuration: expected \`comments\` to be an object.`);
-			return undefined;
-		}
-
-		let result: CommentRule | undefined = undefined;
-		if (typeof source.lineComment !== 'undefined') {
-			if (typeof source.lineComment !== 'string') {
-				console.warn(`[${languageId}]: language configuration: expected \`comments.lineComment\` to be a string.`);
-			} else {
-				result = result || {};
-				result.lineComment = source.lineComment;
-			}
-		}
-		if (typeof source.blockComment !== 'undefined') {
-			if (!isCharacterPair(source.blockComment)) {
-				console.warn(`[${languageId}]: language configuration: expected \`comments.blockComment\` to be an array of two strings.`);
-			} else {
-				result = result || {};
-				result.blockComment = source.blockComment;
-			}
-		}
-		return result;
-	}
-
-	private _extractValidBrackets(languageId: string, configuration: ILanguageConfiguration): CharacterPair[] | undefined {
-		const source = configuration.brackets;
-		if (typeof source === 'undefined') {
-			return undefined;
-		}
-		if (!Array.isArray(source)) {
-			console.warn(`[${languageId}]: language configuration: expected \`brackets\` to be an array.`);
-			return undefined;
-		}
-
-		let result: CharacterPair[] | undefined = undefined;
-		for (let i = 0, len = source.length; i < len; i++) {
-			const pair = source[i];
-			if (!isCharacterPair(pair)) {
-				console.warn(`[${languageId}]: language configuration: expected \`brackets[${i}]\` to be an array of two strings.`);
-				continue;
-			}
-
-			result = result || [];
-			result.push(pair);
-		}
-		return result;
-	}
-
-	private _extractValidAutoClosingPairs(languageId: string, configuration: ILanguageConfiguration): IAutoClosingPairConditional[] | undefined {
-		const source = configuration.autoClosingPairs;
-		if (typeof source === 'undefined') {
-			return undefined;
-		}
-		if (!Array.isArray(source)) {
-			console.warn(`[${languageId}]: language configuration: expected \`autoClosingPairs\` to be an array.`);
-			return undefined;
-		}
-
-		let result: IAutoClosingPairConditional[] | undefined = undefined;
-		for (let i = 0, len = source.length; i < len; i++) {
-			const pair = source[i];
-			if (Array.isArray(pair)) {
-				if (!isCharacterPair(pair)) {
-					console.warn(`[${languageId}]: language configuration: expected \`autoClosingPairs[${i}]\` to be an array of two strings or an object.`);
-					continue;
-				}
-				result = result || [];
-				result.push({ open: pair[0], close: pair[1] });
-			} else {
-				if (!types.isObject(pair)) {
-					console.warn(`[${languageId}]: language configuration: expected \`autoClosingPairs[${i}]\` to be an array of two strings or an object.`);
-					continue;
-				}
-				if (typeof pair.open !== 'string') {
-					console.warn(`[${languageId}]: language configuration: expected \`autoClosingPairs[${i}].open\` to be a string.`);
-					continue;
-				}
-				if (typeof pair.close !== 'string') {
-					console.warn(`[${languageId}]: language configuration: expected \`autoClosingPairs[${i}].close\` to be a string.`);
-					continue;
-				}
-				if (typeof pair.notIn !== 'undefined') {
-					if (!isStringArr(pair.notIn)) {
-						console.warn(`[${languageId}]: language configuration: expected \`autoClosingPairs[${i}].notIn\` to be a string array.`);
-						continue;
-					}
-				}
-				result = result || [];
-				result.push({ open: pair.open, close: pair.close, notIn: pair.notIn });
-			}
-		}
-		return result;
-	}
-
-	private _extractValidSurroundingPairs(languageId: string, configuration: ILanguageConfiguration): IAutoClosingPair[] | undefined {
-		const source = configuration.surroundingPairs;
-		if (typeof source === 'undefined') {
-			return undefined;
-		}
-		if (!Array.isArray(source)) {
-			console.warn(`[${languageId}]: language configuration: expected \`surroundingPairs\` to be an array.`);
-			return undefined;
-		}
-
-		let result: IAutoClosingPair[] | undefined = undefined;
-		for (let i = 0, len = source.length; i < len; i++) {
-			const pair = source[i];
-			if (Array.isArray(pair)) {
-				if (!isCharacterPair(pair)) {
-					console.warn(`[${languageId}]: language configuration: expected \`surroundingPairs[${i}]\` to be an array of two strings or an object.`);
-					continue;
-				}
-				result = result || [];
-				result.push({ open: pair[0], close: pair[1] });
-			} else {
-				if (!types.isObject(pair)) {
-					console.warn(`[${languageId}]: language configuration: expected \`surroundingPairs[${i}]\` to be an array of two strings or an object.`);
-					continue;
-				}
-				if (typeof pair.open !== 'string') {
-					console.warn(`[${languageId}]: language configuration: expected \`surroundingPairs[${i}].open\` to be a string.`);
-					continue;
-				}
-				if (typeof pair.close !== 'string') {
-					console.warn(`[${languageId}]: language configuration: expected \`surroundingPairs[${i}].close\` to be a string.`);
-					continue;
-				}
-				result = result || [];
-				result.push({ open: pair.open, close: pair.close });
-			}
-		}
-		return result;
-	}
-
-	private _extractValidColorizedBracketPairs(languageId: string, configuration: ILanguageConfiguration): CharacterPair[] | undefined {
-		const source = configuration.colorizedBracketPairs;
-		if (typeof source === 'undefined') {
-			return undefined;
-		}
-		if (!Array.isArray(source)) {
-			console.warn(`[${languageId}]: language configuration: expected \`colorizedBracketPairs\` to be an array.`);
-			return undefined;
-		}
-
-		const result: CharacterPair[] = [];
-		for (let i = 0, len = source.length; i < len; i++) {
-			const pair = source[i];
-			if (!isCharacterPair(pair)) {
-				console.warn(`[${languageId}]: language configuration: expected \`colorizedBracketPairs[${i}]\` to be an array of two strings.`);
-				continue;
-			}
-			result.push([pair[0], pair[1]]);
-
-		}
-		return result;
-	}
-
-	private _extractValidOnEnterRules(languageId: string, configuration: ILanguageConfiguration): OnEnterRule[] | undefined {
-		const source = configuration.onEnterRules;
-		if (typeof source === 'undefined') {
-			return undefined;
-		}
-		if (!Array.isArray(source)) {
-			console.warn(`[${languageId}]: language configuration: expected \`onEnterRules\` to be an array.`);
-			return undefined;
-		}
-
-		let result: OnEnterRule[] | undefined = undefined;
-		for (let i = 0, len = source.length; i < len; i++) {
-			const onEnterRule = source[i];
-			if (!types.isObject(onEnterRule)) {
-				console.warn(`[${languageId}]: language configuration: expected \`onEnterRules[${i}]\` to be an object.`);
-				continue;
-			}
-			if (!types.isObject(onEnterRule.action)) {
-				console.warn(`[${languageId}]: language configuration: expected \`onEnterRules[${i}].action\` to be an object.`);
-				continue;
-			}
-			let indentAction: IndentAction;
-			if (onEnterRule.action.indent === 'none') {
-				indentAction = IndentAction.None;
-			} else if (onEnterRule.action.indent === 'indent') {
-				indentAction = IndentAction.Indent;
-			} else if (onEnterRule.action.indent === 'indentOutdent') {
-				indentAction = IndentAction.IndentOutdent;
-			} else if (onEnterRule.action.indent === 'outdent') {
-				indentAction = IndentAction.Outdent;
-			} else {
-				console.warn(`[${languageId}]: language configuration: expected \`onEnterRules[${i}].action.indent\` to be 'none', 'indent', 'indentOutdent' or 'outdent'.`);
-				continue;
-			}
-			const action: EnterAction = { indentAction };
-			if (onEnterRule.action.appendText) {
-				if (typeof onEnterRule.action.appendText === 'string') {
-					action.appendText = onEnterRule.action.appendText;
-				} else {
-					console.warn(`[${languageId}]: language configuration: expected \`onEnterRules[${i}].action.appendText\` to be undefined or a string.`);
-				}
-			}
-			if (onEnterRule.action.removeText) {
-				if (typeof onEnterRule.action.removeText === 'number') {
-					action.removeText = onEnterRule.action.removeText;
-				} else {
-					console.warn(`[${languageId}]: language configuration: expected \`onEnterRules[${i}].action.removeText\` to be undefined or a number.`);
-				}
-			}
-			const beforeText = this._parseRegex(languageId, `onEnterRules[${i}].beforeText`, onEnterRule.beforeText);
-			if (!beforeText) {
-				continue;
-			}
-			const resultingOnEnterRule: OnEnterRule = { beforeText, action };
-			if (onEnterRule.afterText) {
-				const afterText = this._parseRegex(languageId, `onEnterRules[${i}].afterText`, onEnterRule.afterText);
-				if (afterText) {
-					resultingOnEnterRule.afterText = afterText;
-				}
-			}
-			if (onEnterRule.previousLineText) {
-				const previousLineText = this._parseRegex(languageId, `onEnterRules[${i}].previousLineText`, onEnterRule.previousLineText);
-				if (previousLineText) {
-					resultingOnEnterRule.previousLineText = previousLineText;
-				}
-			}
-			result = result || [];
-			result.push(resultingOnEnterRule);
-		}
-
-		return result;
-	}
-
-	private _handleConfig(languageId: string, configuration: ILanguageConfiguration): void {
-
-		const comments = this._extractValidCommentRule(languageId, configuration);
-		const brackets = this._extractValidBrackets(languageId, configuration);
-		const autoClosingPairs = this._extractValidAutoClosingPairs(languageId, configuration);
-		const surroundingPairs = this._extractValidSurroundingPairs(languageId, configuration);
-		const colorizedBracketPairs = this._extractValidColorizedBracketPairs(languageId, configuration);
-		const autoCloseBefore = (typeof configuration.autoCloseBefore === 'string' ? configuration.autoCloseBefore : undefined);
-		const wordPattern = (configuration.wordPattern ? this._parseRegex(languageId, `wordPattern`, configuration.wordPattern) : undefined);
-		const indentationRules = (configuration.indentationRules ? this._mapIndentationRules(languageId, configuration.indentationRules) : undefined);
-		let folding: FoldingRules | undefined = undefined;
-		if (configuration.folding) {
-			const markers = configuration.folding.markers;
-			folding = {
-				offSide: configuration.folding.offSide,
-				markers: markers ? { start: new RegExp(markers.start), end: new RegExp(markers.end) } : undefined
-			};
-		}
-		const onEnterRules = this._extractValidOnEnterRules(languageId, configuration);
-
-		const richEditConfig: ExplicitLanguageConfiguration = {
-			comments,
-			brackets,
-			wordPattern,
-			indentationRules,
-			onEnterRules,
-			autoClosingPairs,
-			surroundingPairs,
-			colorizedBracketPairs,
-			autoCloseBefore,
-			folding,
-			__electricCharacterSupport: undefined,
-		};
-
-		LanguageConfigurationRegistry.register(languageId, richEditConfig, 50);
-	}
-
-	private _parseRegex(languageId: string, confPath: string, value: string | IRegExp): RegExp | undefined {
-		if (typeof value === 'string') {
-			try {
-				return new RegExp(value, '');
-			} catch (err) {
-				console.warn(`[${languageId}]: Invalid regular expression in \`${confPath}\`: `, err);
-				return undefined;
-			}
-		}
-		if (types.isObject(value)) {
-			if (typeof value.pattern !== 'string') {
-				console.warn(`[${languageId}]: language configuration: expected \`${confPath}.pattern\` to be a string.`);
-				return undefined;
-			}
-			if (typeof value.flags !== 'undefined' && typeof value.flags !== 'string') {
-				console.warn(`[${languageId}]: language configuration: expected \`${confPath}.flags\` to be a string.`);
-				return undefined;
-			}
-			try {
-				return new RegExp(value.pattern, value.flags);
-			} catch (err) {
-				console.warn(`[${languageId}]: Invalid regular expression in \`${confPath}\`: `, err);
-				return undefined;
-			}
-		}
-		console.warn(`[${languageId}]: language configuration: expected \`${confPath}\` to be a string or an object.`);
-		return undefined;
-	}
-
-	private _mapIndentationRules(languageId: string, indentationRules: IIndentationRules): IndentationRule | undefined {
-		const increaseIndentPattern = this._parseRegex(languageId, `indentationRules.increaseIndentPattern`, indentationRules.increaseIndentPattern);
-		if (!increaseIndentPattern) {
-			return undefined;
-		}
-		const decreaseIndentPattern = this._parseRegex(languageId, `indentationRules.decreaseIndentPattern`, indentationRules.decreaseIndentPattern);
-		if (!decreaseIndentPattern) {
-			return undefined;
-		}
-
-		const result: IndentationRule = {
-			increaseIndentPattern: increaseIndentPattern,
-			decreaseIndentPattern: decreaseIndentPattern
-		};
-
-		if (indentationRules.indentNextLinePattern) {
-			result.indentNextLinePattern = this._parseRegex(languageId, `indentationRules.indentNextLinePattern`, indentationRules.indentNextLinePattern);
-		}
-		if (indentationRules.unIndentedLinePattern) {
-			result.unIndentedLinePattern = this._parseRegex(languageId, `indentationRules.unIndentedLinePattern`, indentationRules.unIndentedLinePattern);
-		}
-
-		return result;
-	}
 }
 
 const schemaId = 'vscode://schemas/language-configuration';

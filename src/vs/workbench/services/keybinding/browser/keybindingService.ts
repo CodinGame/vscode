@@ -177,6 +177,26 @@ otherMacNumpadMapping.set(ScanCode.Numpad8, KeyCode.Digit8);
 otherMacNumpadMapping.set(ScanCode.Numpad9, KeyCode.Digit9);
 otherMacNumpadMapping.set(ScanCode.Numpad0, KeyCode.Digit0);
 
+export function resolveUserKeybindingItems(items: IUserKeybindingItem[], isDefault: boolean, keyboardMapper: IKeyboardMapper): ResolvedKeybindingItem[] {
+	const result: ResolvedKeybindingItem[] = [];
+	let resultLen = 0;
+	for (const item of items) {
+		const when = item.when || undefined;
+		const parts = item.parts;
+		if (parts.length === 0) {
+			// This might be a removal keybinding item in user settings => accept it
+			result[resultLen++] = new ResolvedKeybindingItem(undefined, item.command, item.commandArgs, when, isDefault, null, false);
+		} else {
+			const resolvedKeybindings = keyboardMapper.resolveUserBinding(parts);
+			for (const resolvedKeybinding of resolvedKeybindings) {
+				result[resultLen++] = new ResolvedKeybindingItem(resolvedKeybinding, item.command, item.commandArgs, when, isDefault, null, false);
+			}
+		}
+	}
+
+	return result;
+}
+
 export class WorkbenchKeybindingService extends AbstractKeybindingService {
 
 	private _keyboardMapper: IKeyboardMapper;
@@ -404,23 +424,7 @@ export class WorkbenchKeybindingService extends AbstractKeybindingService {
 	}
 
 	private _resolveUserKeybindingItems(items: IUserKeybindingItem[], isDefault: boolean): ResolvedKeybindingItem[] {
-		const result: ResolvedKeybindingItem[] = [];
-		let resultLen = 0;
-		for (const item of items) {
-			const when = item.when || undefined;
-			const parts = item.parts;
-			if (parts.length === 0) {
-				// This might be a removal keybinding item in user settings => accept it
-				result[resultLen++] = new ResolvedKeybindingItem(undefined, item.command, item.commandArgs, when, isDefault, null, false);
-			} else {
-				const resolvedKeybindings = this._keyboardMapper.resolveUserBinding(parts);
-				for (const resolvedKeybinding of resolvedKeybindings) {
-					result[resultLen++] = new ResolvedKeybindingItem(resolvedKeybinding, item.command, item.commandArgs, when, isDefault, null, false);
-				}
-			}
-		}
-
-		return result;
+		return resolveUserKeybindingItems(items, isDefault, this._keyboardMapper);
 	}
 
 	private _assertBrowserConflicts(kb: (SimpleKeybinding | ScanCodeBinding)[], commandId: string): boolean {

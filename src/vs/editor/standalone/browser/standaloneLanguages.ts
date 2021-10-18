@@ -90,7 +90,7 @@ export class EncodedTokenizationSupport2Adapter implements modes.ITokenizationSu
 
 	public tokenize(line: string, hasEOL: boolean, state: modes.IState, offsetDelta: number): TokenizationResult {
 		if (typeof this._actual.tokenize === 'function') {
-			return TokenizationSupport2Adapter.adaptTokenize(this._languageId, <{ tokenize(line: string, state: modes.IState): ILineTokens; }>this._actual, line, state, offsetDelta);
+			return adaptTokenize(this._languageId, <{ tokenize(line: string, state: modes.IState): ILineTokens; }>this._actual, line, state, offsetDelta);
 		}
 		throw new Error('Not supported!');
 	}
@@ -99,6 +99,44 @@ export class EncodedTokenizationSupport2Adapter implements modes.ITokenizationSu
 		let result = this._actual.tokenizeEncoded(line, state);
 		return new TokenizationResult2(result.tokens, result.endState);
 	}
+}
+
+function toClassicTokens(tokens: IToken[], language: string, offsetDelta: number): Token[] {
+	let result: Token[] = [];
+	let previousStartIndex: number = 0;
+	for (let i = 0, len = tokens.length; i < len; i++) {
+		const t = tokens[i];
+		let startIndex = t.startIndex;
+
+		// Prevent issues stemming from a buggy external tokenizer.
+		if (i === 0) {
+			// Force first token to start at first index!
+			startIndex = 0;
+		} else if (startIndex < previousStartIndex) {
+			// Force tokens to be after one another!
+			startIndex = previousStartIndex;
+		}
+
+		result[i] = new Token(startIndex + offsetDelta, t.scopes, language);
+
+		previousStartIndex = startIndex;
+	}
+	return result;
+}
+
+export function adaptTokenize(language: string, actual: { tokenize(line: string, state: modes.IState): ILineTokens; }, line: string, state: modes.IState, offsetDelta: number): TokenizationResult {
+	let actualResult = actual.tokenize(line, state);
+	let tokens = toClassicTokens(actualResult.tokens, language, offsetDelta);
+
+	let endState: modes.IState;
+	// try to save an object if possible
+	if (actualResult.endState.equals(state)) {
+		endState = state;
+	} else {
+		endState = actualResult.endState;
+	}
+
+	return new TokenizationResult(tokens, endState);
 }
 
 /**
@@ -118,46 +156,8 @@ export class TokenizationSupport2Adapter implements modes.ITokenizationSupport {
 		return this._actual.getInitialState();
 	}
 
-	private static _toClassicTokens(tokens: IToken[], language: string, offsetDelta: number): Token[] {
-		let result: Token[] = [];
-		let previousStartIndex: number = 0;
-		for (let i = 0, len = tokens.length; i < len; i++) {
-			const t = tokens[i];
-			let startIndex = t.startIndex;
-
-			// Prevent issues stemming from a buggy external tokenizer.
-			if (i === 0) {
-				// Force first token to start at first index!
-				startIndex = 0;
-			} else if (startIndex < previousStartIndex) {
-				// Force tokens to be after one another!
-				startIndex = previousStartIndex;
-			}
-
-			result[i] = new Token(startIndex + offsetDelta, t.scopes, language);
-
-			previousStartIndex = startIndex;
-		}
-		return result;
-	}
-
-	public static adaptTokenize(language: string, actual: { tokenize(line: string, state: modes.IState): ILineTokens; }, line: string, state: modes.IState, offsetDelta: number): TokenizationResult {
-		let actualResult = actual.tokenize(line, state);
-		let tokens = TokenizationSupport2Adapter._toClassicTokens(actualResult.tokens, language, offsetDelta);
-
-		let endState: modes.IState;
-		// try to save an object if possible
-		if (actualResult.endState.equals(state)) {
-			endState = state;
-		} else {
-			endState = actualResult.endState;
-		}
-
-		return new TokenizationResult(tokens, endState);
-	}
-
 	public tokenize(line: string, hasEOL: boolean, state: modes.IState, offsetDelta: number): TokenizationResult {
-		return TokenizationSupport2Adapter.adaptTokenize(this._languageId, this._actual, line, state, offsetDelta);
+		return adaptTokenize(this._languageId, this._actual, line, state, offsetDelta);
 	}
 
 	private _toBinaryTokens(languageIdCodec: modes.ILanguageIdCodec, tokens: IToken[], offsetDelta: number): Uint32Array {
@@ -658,6 +658,7 @@ export function createMonacoLanguagesAPI(): typeof monaco.languages {
 		registerInlayHintsProvider: <any>registerInlayHintsProvider,
 		LanguageConfigurationRegistryImpl: <any>LanguageConfigurationRegistryImpl,
 		LanguageConfigurationChangeEvent: <any>LanguageConfigurationChangeEvent,
+		adaptTokenize,
 
 		// enums
 		DocumentHighlightKind: standaloneEnums.DocumentHighlightKind,
