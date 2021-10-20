@@ -19,7 +19,6 @@ import { OS, isLinux, isMacintosh } from 'vs/base/common/platform';
 import Severity from 'vs/base/common/severity';
 import { URI } from 'vs/base/common/uri';
 import { IBulkEditOptions, IBulkEditResult, IBulkEditService, ResourceEdit, ResourceTextEdit } from 'vs/editor/browser/services/bulkEditService';
-import { isDiffEditorConfigurationKey, isEditorConfigurationKey } from 'vs/editor/common/config/editorConfigurationSchema';
 import { EditOperation, ISingleEditOperation } from 'vs/editor/common/core/editOperation';
 import { IPosition, Position as Pos } from 'vs/editor/common/core/position';
 import { Range } from 'vs/editor/common/core/range';
@@ -787,27 +786,6 @@ class StandaloneWorkspaceContextService implements IWorkspaceContextService {
 
 	public isCurrentWorkspace(workspaceIdOrFolder: IWorkspaceIdentifier | ISingleFolderWorkspaceIdentifier | URI): boolean {
 		return true;
-	}
-}
-
-export function updateConfigurationService(configurationService: IConfigurationService, source: any, isDiffEditor: boolean): void {
-	if (!source) {
-		return;
-	}
-	if (!(configurationService instanceof StandaloneConfigurationService)) {
-		return;
-	}
-	const toUpdate: [string, any][] = [];
-	Object.keys(source).forEach((key) => {
-		if (isEditorConfigurationKey(key)) {
-			toUpdate.push([`editor.${key}`, source[key]]);
-		}
-		if (isDiffEditor && isDiffEditorConfigurationKey(key)) {
-			toUpdate.push([`diffEditor.${key}`, source[key]]);
-		}
-	});
-	if (toUpdate.length > 0) {
-		configurationService.updateValues(toUpdate);
 	}
 }
 
