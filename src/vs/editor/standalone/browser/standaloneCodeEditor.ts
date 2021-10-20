@@ -14,11 +14,10 @@ import { InternalEditorAction } from 'vs/editor/common/editorAction';
 import { IModelChangedEvent } from 'vs/editor/common/editorCommon';
 import { ITextModel } from 'vs/editor/common/model';
 import { IEditorWorkerService } from 'vs/editor/common/services/editorWorker';
-import { StandaloneKeybindingService, updateConfigurationService } from 'vs/editor/standalone/browser/standaloneServices';
+import { StandaloneKeybindingService } from 'vs/editor/standalone/browser/standaloneServices';
 import { IStandaloneThemeService } from 'vs/editor/standalone/common/standaloneTheme';
 import { IMenuItem, MenuId, MenuRegistry } from 'vs/platform/actions/common/actions';
 import { CommandsRegistry, ICommandHandler, ICommandService } from 'vs/platform/commands/common/commands';
-import { IConfigurationService } from 'vs/platform/configuration/common/configuration';
 import { ContextKeyExpr, IContextKey, IContextKeyService } from 'vs/platform/contextkey/common/contextkey';
 import { IContextMenuService } from 'vs/platform/contextview/browser/contextView';
 import { IInstantiationService, ServicesAccessor } from 'vs/platform/instantiation/common/instantiation';
@@ -87,60 +86,6 @@ export interface IActionDescriptor {
  * Options which apply for all editors.
  */
 export interface IGlobalEditorOptions {
-	/**
-	 * The number of spaces a tab is equal to.
-	 * This setting is overridden based on the file contents when `detectIndentation` is on.
-	 * Defaults to 4.
-	 */
-	tabSize?: number;
-	/**
-	 * Insert spaces when pressing `Tab`.
-	 * This setting is overridden based on the file contents when `detectIndentation` is on.
-	 * Defaults to true.
-	 */
-	insertSpaces?: boolean;
-	/**
-	 * Controls whether `tabSize` and `insertSpaces` will be automatically detected when a file is opened based on the file contents.
-	 * Defaults to true.
-	 */
-	detectIndentation?: boolean;
-	/**
-	 * Remove trailing auto inserted whitespace.
-	 * Defaults to true.
-	 */
-	trimAutoWhitespace?: boolean;
-	/**
-	 * Special handling for large files to disable certain memory intensive features.
-	 * Defaults to true.
-	 */
-	largeFileOptimizations?: boolean;
-	/**
-	 * Controls whether completions should be computed based on words in the document.
-	 * Defaults to true.
-	 */
-	wordBasedSuggestions?: boolean;
-	/**
-	 * Controls whether word based completions should be included from opened documents of the same language or any language.
-	 */
-	wordBasedSuggestionsOnlySameLanguage?: boolean;
-	/**
-	 * Controls whether the semanticHighlighting is shown for the languages that support it.
-	 * true: semanticHighlighting is enabled for all themes
-	 * false: semanticHighlighting is disabled for all themes
-	 * 'configuredByTheme': semanticHighlighting is controlled by the current color theme's semanticHighlighting setting.
-	 * Defaults to 'byTheme'.
-	 */
-	'semanticHighlighting.enabled'?: true | false | 'configuredByTheme';
-	/**
-	 * Keep peek editors open even when double clicking their content or when hitting `Escape`.
-	 * Defaults to false.
-	 */
-	stablePeek?: boolean;
-	/**
-	 * Lines above this length will not be tokenized for performance reasons.
-	 * Defaults to 20000.
-	 */
-	maxTokenizationLineLength?: number;
 	/**
 	 * Theme to be used for rendering.
 	 * The current out-of-the-box available themes are: 'vs' (default), 'vs-dark', 'hc-black'.
@@ -399,7 +344,6 @@ export class StandaloneCodeEditor extends CodeEditorWidget implements IStandalon
 
 export class StandaloneEditor extends StandaloneCodeEditor implements IStandaloneCodeEditor {
 
-	private readonly _configurationService: IConfigurationService;
 	private readonly _standaloneThemeService: IStandaloneThemeService;
 	private _ownsModel: boolean;
 
@@ -413,14 +357,12 @@ export class StandaloneEditor extends StandaloneCodeEditor implements IStandalon
 		@IKeybindingService keybindingService: IKeybindingService,
 		@IStandaloneThemeService themeService: IStandaloneThemeService,
 		@INotificationService notificationService: INotificationService,
-		@IConfigurationService configurationService: IConfigurationService,
 		@IAccessibilityService accessibilityService: IAccessibilityService,
 		@IModelService modelService: IModelService,
 		@ILanguageService languageService: ILanguageService,
 		@ILanguageConfigurationService languageConfigurationService: ILanguageConfigurationService,
 	) {
 		const options = { ..._options };
-		updateConfigurationService(configurationService, options, false);
 		const themeDomRegistration = (<StandaloneThemeService>themeService).registerEditorContainer(domElement);
 		if (typeof options.theme === 'string') {
 			themeService.setTheme(options.theme);
@@ -432,7 +374,6 @@ export class StandaloneEditor extends StandaloneCodeEditor implements IStandalon
 		delete options.model;
 		super(domElement, options, instantiationService, codeEditorService, commandService, contextKeyService, keybindingService, themeService, notificationService, accessibilityService, languageConfigurationService);
 
-		this._configurationService = configurationService;
 		this._standaloneThemeService = themeService;
 		this._register(themeDomRegistration);
 
@@ -461,7 +402,6 @@ export class StandaloneEditor extends StandaloneCodeEditor implements IStandalon
 	}
 
 	public override updateOptions(newOptions: Readonly<IEditorOptions & IGlobalEditorOptions>): void {
-		updateConfigurationService(this._configurationService, newOptions, false);
 		if (typeof newOptions.theme === 'string') {
 			this._standaloneThemeService.setTheme(newOptions.theme);
 		}
@@ -482,7 +422,6 @@ export class StandaloneEditor extends StandaloneCodeEditor implements IStandalon
 
 export class StandaloneDiffEditor extends DiffEditorWidget implements IStandaloneDiffEditor {
 
-	private readonly _configurationService: IConfigurationService;
 	private readonly _standaloneThemeService: IStandaloneThemeService;
 
 	/**
@@ -497,13 +436,11 @@ export class StandaloneDiffEditor extends DiffEditorWidget implements IStandalon
 		@ICodeEditorService codeEditorService: ICodeEditorService,
 		@IStandaloneThemeService themeService: IStandaloneThemeService,
 		@INotificationService notificationService: INotificationService,
-		@IConfigurationService configurationService: IConfigurationService,
 		@IContextMenuService contextMenuService: IContextMenuService,
 		@IEditorProgressService editorProgressService: IEditorProgressService,
 		@IClipboardService clipboardService: IClipboardService,
 	) {
 		const options = { ..._options };
-		updateConfigurationService(configurationService, options, true);
 		const themeDomRegistration = (<StandaloneThemeService>themeService).registerEditorContainer(domElement);
 		if (typeof options.theme === 'string') {
 			themeService.setTheme(options.theme);
@@ -514,7 +451,6 @@ export class StandaloneDiffEditor extends DiffEditorWidget implements IStandalon
 
 		super(domElement, options, {}, clipboardService, editorWorkerService, contextKeyService, instantiationService, codeEditorService, themeService, notificationService, contextMenuService, editorProgressService);
 
-		this._configurationService = configurationService;
 		this._standaloneThemeService = themeService;
 
 		this._register(themeDomRegistration);
@@ -525,7 +461,6 @@ export class StandaloneDiffEditor extends DiffEditorWidget implements IStandalon
 	}
 
 	public override updateOptions(newOptions: Readonly<IDiffEditorOptions & IGlobalEditorOptions>): void {
-		updateConfigurationService(this._configurationService, newOptions, true);
 		if (typeof newOptions.theme === 'string') {
 			this._standaloneThemeService.setTheme(newOptions.theme);
 		}

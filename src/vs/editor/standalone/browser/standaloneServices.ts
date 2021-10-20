@@ -89,7 +89,6 @@ import { IKeyboardMapper } from 'vs/platform/keyboardLayout/common/keyboardMappe
 import { KeybindingIO } from 'vs/workbench/services/keybinding/common/keybindingIO';
 import { MacLinuxFallbackKeyboardMapper } from 'vs/workbench/services/keybinding/common/macLinuxFallbackKeyboardMapper';
 import { resolveUserKeybindingItems } from 'vs/workbench/services/keybinding/browser/keybindingService';
-import { isDiffEditorConfigurationKey, isEditorConfigurationKey } from 'vs/editor/common/config/editorConfigurationSchema';
 import { Extensions, IConfigurationRegistry } from 'vs/platform/configuration/common/configurationRegistry';
 import { Registry } from 'vs/platform/registry/common/platform';
 
@@ -786,27 +785,6 @@ class StandaloneWorkspaceContextService implements IWorkspaceContextService {
 
 	public isCurrentWorkspace(workspaceIdOrFolder: IWorkspaceIdentifier | ISingleFolderWorkspaceIdentifier | URI): boolean {
 		return true;
-	}
-}
-
-export function updateConfigurationService(configurationService: IConfigurationService, source: any, isDiffEditor: boolean): void {
-	if (!source) {
-		return;
-	}
-	if (!(configurationService instanceof StandaloneConfigurationService)) {
-		return;
-	}
-	const toUpdate: [string, any][] = [];
-	Object.keys(source).forEach((key) => {
-		if (isEditorConfigurationKey(key)) {
-			toUpdate.push([`editor.${key}`, source[key]]);
-		}
-		if (isDiffEditor && isDiffEditorConfigurationKey(key)) {
-			toUpdate.push([`diffEditor.${key}`, source[key]]);
-		}
-	});
-	if (toUpdate.length > 0) {
-		configurationService.updateValues(toUpdate);
 	}
 }
 
