@@ -92,7 +92,6 @@ export function create(domElement: HTMLElement, options?: IStandaloneEditorConst
 			services.get(IContextViewService),
 			services.get(IStandaloneThemeService),
 			services.get(INotificationService),
-			services.get(IConfigurationService),
 			services.get(IAccessibilityService),
 			services.get(IModelService),
 			services.get(IModeService),

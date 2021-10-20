@@ -14,7 +14,7 @@ import { InternalEditorAction } from 'vs/editor/common/editorAction';
 import { IModelChangedEvent } from 'vs/editor/common/editorCommon';
 import { ITextModel } from 'vs/editor/common/model';
 import { IEditorWorkerService } from 'vs/editor/common/services/editorWorkerService';
-import { StandaloneKeybindingService, updateConfigurationService } from 'vs/editor/standalone/browser/simpleServices';
+import { StandaloneKeybindingService } from 'vs/editor/standalone/browser/simpleServices';
 import { IStandaloneThemeService } from 'vs/editor/standalone/common/standaloneThemeService';
 import { IMenuItem, MenuId, MenuRegistry } from 'vs/platform/actions/common/actions';
 import { CommandsRegistry, ICommandHandler, ICommandService } from 'vs/platform/commands/common/commands';
@@ -398,7 +398,6 @@ export class StandaloneCodeEditor extends CodeEditorWidget implements IStandalon
 export class StandaloneEditor extends StandaloneCodeEditor implements IStandaloneCodeEditor {
 
 	private readonly _contextViewService: ContextViewService;
-	private readonly _configurationService: IConfigurationService;
 	private readonly _standaloneThemeService: IStandaloneThemeService;
 	private _ownsModel: boolean;
 
@@ -414,13 +413,11 @@ export class StandaloneEditor extends StandaloneCodeEditor implements IStandalon
 		@IContextViewService contextViewService: IContextViewService,
 		@IStandaloneThemeService themeService: IStandaloneThemeService,
 		@INotificationService notificationService: INotificationService,
-		@IConfigurationService configurationService: IConfigurationService,
 		@IAccessibilityService accessibilityService: IAccessibilityService,
 		@IModelService modelService: IModelService,
 		@IModeService modeService: IModeService,
 	) {
 		const options = { ..._options };
-		updateConfigurationService(configurationService, options, false);
 		const themeDomRegistration = (<StandaloneThemeServiceImpl>themeService).registerEditorContainer(domElement);
 		if (typeof options.theme === 'string') {
 			themeService.setTheme(options.theme);
@@ -433,7 +430,6 @@ export class StandaloneEditor extends StandaloneCodeEditor implements IStandalon
 		super(domElement, options, instantiationService, codeEditorService, commandService, contextKeyService, keybindingService, themeService, notificationService, accessibilityService);
 
 		this._contextViewService = <ContextViewService>contextViewService;
-		this._configurationService = configurationService;
 		this._standaloneThemeService = themeService;
 		this._register(toDispose);
 		this._register(themeDomRegistration);
@@ -462,7 +458,6 @@ export class StandaloneEditor extends StandaloneCodeEditor implements IStandalon
 	}
 
 	public override updateOptions(newOptions: Readonly<IEditorOptions & IGlobalEditorOptions>): void {
-		updateConfigurationService(this._configurationService, newOptions, false);
 		if (typeof newOptions.theme === 'string') {
 			this._standaloneThemeService.setTheme(newOptions.theme);
 		}
@@ -491,7 +486,6 @@ export class StandaloneEditor extends StandaloneCodeEditor implements IStandalon
 export class StandaloneDiffEditor extends DiffEditorWidget implements IStandaloneDiffEditor {
 
 	private readonly _contextViewService: ContextViewService;
-	private readonly _configurationService: IConfigurationService;
 	private readonly _standaloneThemeService: IStandaloneThemeService;
 
 	/**
@@ -515,7 +509,6 @@ export class StandaloneDiffEditor extends DiffEditorWidget implements IStandalon
 		@IClipboardService clipboardService: IClipboardService,
 	) {
 		const options = { ..._options };
-		updateConfigurationService(configurationService, options, true);
 		const themeDomRegistration = (<StandaloneThemeServiceImpl>themeService).registerEditorContainer(domElement);
 		if (typeof options.theme === 'string') {
 			themeService.setTheme(options.theme);
@@ -527,7 +520,6 @@ export class StandaloneDiffEditor extends DiffEditorWidget implements IStandalon
 		super(domElement, options, {}, clipboardService, editorWorkerService, contextKeyService, instantiationService, codeEditorService, themeService, notificationService, contextMenuService, editorProgressService);
 
 		this._contextViewService = <ContextViewService>contextViewService;
-		this._configurationService = configurationService;
 		this._standaloneThemeService = themeService;
 
 		this._register(toDispose);
@@ -541,7 +533,6 @@ export class StandaloneDiffEditor extends DiffEditorWidget implements IStandalon
 	}
 
 	public override updateOptions(newOptions: Readonly<IDiffEditorOptions & IGlobalEditorOptions>): void {
-		updateConfigurationService(this._configurationService, newOptions, true);
 		if (typeof newOptions.theme === 'string') {
 			this._standaloneThemeService.setTheme(newOptions.theme);
 		}
