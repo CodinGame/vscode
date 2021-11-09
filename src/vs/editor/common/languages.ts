@@ -2012,9 +2012,6 @@ export interface ITokenizationSupportChangedEvent {
 	changedColorMap: boolean;
 }
 
-/**
- * @internal
- */
 export interface ITokenizationSupportFactory {
 	createTokenizationSupport(): ProviderResult<ITokenizationSupport>;
 }

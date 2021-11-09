@@ -706,6 +706,8 @@ export function createMonacoLanguagesAPI(): typeof monaco.languages {
 		registerTokensProviderFactory: <any>registerTokensProviderFactory,
 		setTokensProvider: <any>setTokensProvider,
 		setMonarchTokensProvider: <any>setMonarchTokensProvider,
+		setTokenizationSupport: <any>setTokenizationSupport,
+		setTokenizationSupportFactory: <any>setTokenizationSupportFactory,
 		registerReferenceProvider: <any>registerReferenceProvider,
 		registerRenameProvider: <any>registerRenameProvider,
 		registerCompletionItemProvider: <any>registerCompletionItemProvider,
