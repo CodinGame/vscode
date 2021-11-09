@@ -351,6 +351,16 @@ export function setTokensProvider(languageId: string, provider: TokensProvider |
 	return modes.TokenizationRegistry.register(languageId, create(provider));
 }
 
+/**
+ * Set the tokenization support for a language (manual implementation).
+ */
+export function setTokenizationSupport(languageId: string, support: modes.ITokenizationSupport | Thenable<modes.ITokenizationSupport | null>) {
+	if (isThenable<modes.ITokenizationSupport | null>(support)) {
+		return modes.TokenizationRegistry.registerPromise(languageId, support);
+	}
+	return modes.TokenizationRegistry.register(languageId, support);
+}
+
 
 /**
  * Set the tokens provider for a language (monarch implementation).
@@ -631,6 +641,7 @@ export function createMonacoLanguagesAPI(): typeof monaco.languages {
 		setColorMap: setColorMap,
 		setTokensProvider: <any>setTokensProvider,
 		setMonarchTokensProvider: <any>setMonarchTokensProvider,
+		setTokenizationSupport: <any>setTokenizationSupport,
 		registerReferenceProvider: <any>registerReferenceProvider,
 		registerRenameProvider: <any>registerRenameProvider,
 		registerCompletionItemProvider: <any>registerCompletionItemProvider,
