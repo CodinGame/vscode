@@ -252,9 +252,9 @@ export function tokenize(text: string, languageId: string): languages.Token[][] 
 /**
  * Define a new theme or update an existing theme.
  */
-export function defineTheme(themeName: string, themeData: IStandaloneThemeData): void {
+export function defineTheme(themeName: string, themeData: IStandaloneThemeData, semanticHighlighting = false): void {
 	const standaloneThemeService = StandaloneServices.get(IStandaloneThemeService);
-	standaloneThemeService.defineTheme(themeName, themeData);
+	standaloneThemeService.defineTheme(themeName, themeData, semanticHighlighting);
 }
 
 /**

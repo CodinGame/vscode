@@ -36,7 +36,7 @@ export interface IStandaloneThemeService extends IThemeService {
 
 	setAutoDetectHighContrast(autoDetectHighContrast: boolean): void;
 
-	defineTheme(themeName: string, themeData: IStandaloneThemeData): void;
+	defineTheme(themeName: string, themeData: IStandaloneThemeData, semanticHighlighting?: boolean): void;
 
 	getColorTheme(): IStandaloneTheme;
 

@@ -35,7 +35,7 @@ class StandaloneTheme implements IStandaloneTheme {
 	private readonly defaultColors: { [colorId: string]: Color | undefined; };
 	private _tokenTheme: TokenTheme | null;
 
-	constructor(name: string, standaloneThemeData: IStandaloneThemeData) {
+	constructor(name: string, standaloneThemeData: IStandaloneThemeData, public readonly semanticHighlighting = false) {
 		this.themeData = standaloneThemeData;
 		const base = standaloneThemeData.base;
 		if (name.length > 0) {
@@ -172,8 +172,6 @@ class StandaloneTheme implements IStandaloneTheme {
 	public get tokenColorMap(): string[] {
 		return [];
 	}
-
-	public readonly semanticHighlighting = false;
 }
 
 function isBuiltinTheme(themeName: string): themeName is BuiltinTheme {
@@ -294,7 +292,7 @@ export class StandaloneThemeService extends Disposable implements IStandaloneThe
 		};
 	}
 
-	public defineTheme(themeName: string, themeData: IStandaloneThemeData): void {
+	public defineTheme(themeName: string, themeData: IStandaloneThemeData, semanticHighlighting: boolean = false): void {
 		if (!/^[a-z0-9\-]+$/i.test(themeName)) {
 			throw new Error('Illegal theme name!');
 		}
@@ -302,7 +300,7 @@ export class StandaloneThemeService extends Disposable implements IStandaloneThe
 			throw new Error('Illegal theme base!');
 		}
 		// set or replace theme
-		this._knownThemes.set(themeName, new StandaloneTheme(themeName, themeData));
+		this._knownThemes.set(themeName, new StandaloneTheme(themeName, themeData, semanticHighlighting));
 
 		if (isBuiltinTheme(themeName)) {
 			this._knownThemes.forEach(theme => {
