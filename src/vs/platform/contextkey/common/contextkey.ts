@@ -6,7 +6,7 @@
 import { Event } from 'vs/base/common/event';
 import { isChrome, isEdge, isFirefox, isLinux, isMacintosh, isSafari, isWeb, isWindows } from 'vs/base/common/platform';
 import { isFalsyOrWhitespace } from 'vs/base/common/strings';
-import { createDecorator } from 'vs/platform/instantiation/common/instantiation';
+import { createDecorator, ServiceIdentifier } from 'vs/platform/instantiation/common/instantiation';
 
 const CONSTANT_VALUES = new Map<string, boolean>();
 CONSTANT_VALUES.set('false', false);
@@ -1588,7 +1588,7 @@ export interface IContextKeyServiceTarget {
 	getAttribute(attr: string): string | null;
 }
 
-export const IContextKeyService = createDecorator<IContextKeyService>('contextKeyService');
+export const IContextKeyService: ServiceIdentifier<IContextKeyService> = createDecorator<IContextKeyService>('contextKeyService');
 
 export interface IReadableSet<T> {
 	has(value: T): boolean;

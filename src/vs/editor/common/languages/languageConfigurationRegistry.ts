@@ -18,7 +18,7 @@ import { IndentConsts, IndentRulesSupport } from 'vs/editor/common/languages/sup
 import { OnEnterSupport } from 'vs/editor/common/languages/supports/onEnter';
 import { RichEditBrackets } from 'vs/editor/common/languages/supports/richEditBrackets';
 import { EditorAutoIndentStrategy } from 'vs/editor/common/config/editorOptions';
-import { createDecorator } from 'vs/platform/instantiation/common/instantiation';
+import { createDecorator, ServiceIdentifier } from 'vs/platform/instantiation/common/instantiation';
 import { IConfigurationService } from 'vs/platform/configuration/common/configuration';
 import { ILanguageService } from 'vs/editor/common/services/language';
 import { registerSingleton } from 'vs/platform/instantiation/common/extensions';
@@ -60,7 +60,7 @@ export class LanguageConfigurationServiceChangeEvent {
 	}
 }
 
-export const ILanguageConfigurationService = createDecorator<ILanguageConfigurationService>('languageConfigurationService');
+export const ILanguageConfigurationService: ServiceIdentifier<ILanguageConfigurationService> = createDecorator<ILanguageConfigurationService>('languageConfigurationService');
 
 export class LanguageConfigurationService extends Disposable implements ILanguageConfigurationService {
 	_serviceBrand: undefined;
