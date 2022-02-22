@@ -8,10 +8,10 @@ import { ICodeEditor, IDiffEditor } from 'vs/editor/browser/editorBrowser';
 import { IDecorationRenderOptions } from 'vs/editor/common/editorCommon';
 import { IModelDecorationOptions, ITextModel } from 'vs/editor/common/model';
 import { ITextResourceEditorInput } from 'vs/platform/editor/common/editor';
-import { createDecorator } from 'vs/platform/instantiation/common/instantiation';
+import { createDecorator, ServiceIdentifier } from 'vs/platform/instantiation/common/instantiation';
 import { URI } from 'vs/base/common/uri';
 
-export const ICodeEditorService = createDecorator<ICodeEditorService>('codeEditorService');
+export const ICodeEditorService: ServiceIdentifier<ICodeEditorService> = createDecorator<ICodeEditorService>('codeEditorService');
 
 export interface ICodeEditorService {
 	readonly _serviceBrand: undefined;

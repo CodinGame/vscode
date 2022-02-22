@@ -7,9 +7,9 @@ import { IDisposable, IReference } from 'vs/base/common/lifecycle';
 import { URI } from 'vs/base/common/uri';
 import { ITextModel, ITextSnapshot } from 'vs/editor/common/model';
 import { IEditorModel } from 'vs/platform/editor/common/editor';
-import { createDecorator } from 'vs/platform/instantiation/common/instantiation';
+import { createDecorator, ServiceIdentifier } from 'vs/platform/instantiation/common/instantiation';
 
-export const ITextModelService = createDecorator<ITextModelService>('textModelService');
+export const ITextModelService: ServiceIdentifier<ITextModelService> = createDecorator<ITextModelService>('textModelService');
 
 export interface ITextModelService {
 	readonly _serviceBrand: undefined;

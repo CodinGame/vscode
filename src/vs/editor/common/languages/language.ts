@@ -6,9 +6,9 @@
 import { Event } from 'vs/base/common/event';
 import { URI } from 'vs/base/common/uri';
 import { ILanguageIdCodec } from 'vs/editor/common/languages';
-import { createDecorator } from 'vs/platform/instantiation/common/instantiation';
+import { createDecorator, ServiceIdentifier } from 'vs/platform/instantiation/common/instantiation';
 
-export const ILanguageService = createDecorator<ILanguageService>('languageService');
+export const ILanguageService: ServiceIdentifier<ILanguageService> = createDecorator<ILanguageService>('languageService');
 
 export interface ILanguageExtensionPoint {
 	id: string;
