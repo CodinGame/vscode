@@ -10,8 +10,6 @@ import { ToggleHighContrastNLS } from 'vs/editor/common/standaloneStrings';
 
 class ToggleHighContrast extends EditorAction {
 
-	private _originalThemeName: string | null;
-
 	constructor() {
 		super({
 			id: 'editor.action.toggleHighContrast',
@@ -19,19 +17,11 @@ class ToggleHighContrast extends EditorAction {
 			alias: 'Toggle High Contrast Theme',
 			precondition: undefined
 		});
-		this._originalThemeName = null;
 	}
 
 	public run(accessor: ServicesAccessor, editor: ICodeEditor): void {
 		const standaloneThemeService = accessor.get(IStandaloneThemeService);
-		if (this._originalThemeName) {
-			// We must toggle back to the integrator's theme
-			standaloneThemeService.setTheme(this._originalThemeName);
-			this._originalThemeName = null;
-		} else {
-			this._originalThemeName = standaloneThemeService.getColorTheme().themeName;
-			standaloneThemeService.setTheme('hc-black');
-		}
+		standaloneThemeService.setForceHighContrast(!standaloneThemeService.isHighContrastEnabled());
 	}
 }
 
