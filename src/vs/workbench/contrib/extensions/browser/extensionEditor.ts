@@ -1542,10 +1542,10 @@ export class ExtensionEditor extends EditorPane {
 					.sort((a, b) => a.id.localeCompare(b.id))
 					.map(color => $('tr', undefined,
 						$('td', undefined, $('code', undefined, color.id)),
-						$('td', undefined, color.description),
+						$('td', undefined, color.description!),
 						$('td', undefined, ...colorPreview(color.defaults.dark)),
 						$('td', undefined, ...colorPreview(color.defaults.light)),
-						$('td', undefined, ...colorPreview(color.defaults.highContrast))
+						$('td', undefined, ...colorPreview(color.defaults.highContrast!))
 					))
 			)
 		);
